@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Users</h1>
+{% for u in users: %}
+   <a href="{{url_for('user_edit',uid=u.id)}}"><i class="icon-edit"></i></a>
+      {{ u.username }} / {{ u.email }} {% if u.active: %}<i class="icon-ok"></i>{% endif %}
+   <br />
+{% endfor %}
+
+<h4>Create a new user</h4>
+<form class="form-inline" method="post" action="">
+    <input type="text" name="username" placeholder="username" />
+    <button type="submit" class="btn"/>Create</button>
+</form>
+
+{% endblock %}
