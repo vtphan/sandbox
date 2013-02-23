@@ -1,5 +1,6 @@
 import os
 import tempfile
+import json
 import random
 import string
 import subprocess
@@ -13,7 +14,6 @@ from flask import Flask, Response, jsonify, render_template, session, request,\
 from flask_peewee.auth import Auth
 from flask_peewee.db import Database
 from peewee import *
-
 
 # ----------------------------------------------------------------------------
 DATABASE = { 'name': 'sandbox.db', 'engine': 'peewee.SqliteDatabase' }
@@ -33,27 +33,32 @@ def add_user_to_template():
     return dict(this_user=auth.get_logged_in_user())
 
 # ----------------------------------------------------------------------------
-# Whiteboard management
+# Sandbox management
 # ----------------------------------------------------------------------------
 
-@app.route('/whiteboard')
-@app.route('/whiteboard/<int:uid>')
+@app.route('/sandbox')
+@app.route('/sandbox/<int:uid>')
 @auth.login_required
-def whiteboard(uid=None):
+def sandbox(uid=None):
 	user = auth.get_logged_in_user()
-	if user.username != 'admin':
-		return redirect(url_for('whiteboard'))
+	if user.username != 'admin' and uid is not None:
+		return redirect(url_for('index'))
 
 	if uid is not None:
-		user = auth.User.get(auth.User.id == uid)
+		try:
+			user = auth.User.get(auth.User.id == uid)
+		except auth.User.DoesNotExist:
+			return redirect(url_for('index'))
 
-	return render_template('whiteboard.html', user=user)
+	return render_template('sandbox.html', user=user)
 
 # ----------------------------------------------------------------------------
-@app.route('/send_code/<int:uid>', methods=['POST'])
-def send_code(uid):
-	code = request.form['code']
-	red.publish('channel-in-%s' % uid, u'%s<br/>' % code)
+@app.route('/chat/<int:uid>', methods=['POST'])
+def chat(uid):
+	user = auth.get_logged_in_user()
+	now = datetime.datetime.now().replace(microsecond=0).time()
+	message = '[%s] %s: %s<br/>' % (now.isoformat(), user.username, request.form['message'])
+	red.publish('channel-%s' % uid, u'%s' % json.dumps({'chat':message}))
 	return ''
 
 # ----------------------------------------------------------------------------
@@ -75,18 +80,18 @@ def run_code(uid):
 		f.write(code)
 	output = run_code_now(fn)
 
-	red.publish('channel-out-%s' % uid, u'%s<br/>' % output)
-	# return jsonify(result = output)
+	message = json.dumps({'output':output, 'code':code})
+	red.publish('channel-%s' % uid, u'%s' % message)
 	return ''
 
 # ----------------------------------------------------------------------------
-@app.route('/stream/<c>/<int:uid>')
-def stream(c, uid):
+@app.route('/stream/<int:uid>')
+def stream(uid):
 	def event_stream():
 		pubsub = red.pubsub()
-		pubsub.subscribe('channel-%s-%s' % (c, uid))
+		pubsub.subscribe('channel-%s' % uid)
 		for message in pubsub.listen():
-			yield 'data: %s\n\n' % message['data']
+			yield 'data: {0}\n\n'.format(message['data'])
 
 	return Response(event_stream(), mimetype="text/event-stream")
 
@@ -97,7 +102,8 @@ def stream(c, uid):
 def init_user_table():
    auth.User.create_table(fail_silently=True)
    if auth.User.select().count() == 0:
-   	admin = auth.User(username='admin',email='admin@localhost',active=True)
+   	admin = auth.User(username='admin',email='admin@localhost')
+   	admin.is_active = True
    	admin.set_password('password')
    	admin.save()
 

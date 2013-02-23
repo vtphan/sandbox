@@ -3,7 +3,8 @@
 <h1>Users</h1>
 {% for u in users: %}
    <a href="{{url_for('user_edit',uid=u.id)}}"><i class="icon-edit"></i></a>
-      {{ u.username }} / {{ u.email }} {% if u.active: %}<i class="icon-ok"></i>{% endif %}
+   {% if u.active: %}<i class="icon-ok"></i>{% else: %}<i class="icon-remove"></i>{% endif %}
+   <a href="{{url_for('whiteboard', uid=u.id)}}">{{ u.username }}</a>
    <br />
 {% endfor %}
 

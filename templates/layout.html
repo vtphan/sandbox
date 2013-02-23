@@ -28,8 +28,10 @@ body {
          <a class="brand" href="{{url_for('index')}}">Sandbox</a>
          <div class="nav-collapse collapse">
             <ul class="nav">
-               <li><a href="{{url_for('users')}}">Users</a></li>
-               <li><a href="{{url_for('whiteboard')}}">Whiteboard</a></li>
+               {% if this_user.username == 'admin': %}
+                  <li><a href="{{url_for('users')}}">Users</a></li>
+               {% endif %}
+               <li><a href="{{url_for('sandbox')}}">Sandbox</a></li>
             </ul>
          </div><!--/.nav-collapse -->
 

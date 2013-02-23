@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<strong>{{user.username}}'s whiteboard</strong>
+
+<!-- CODE and OUTPUT -->
+<div class="row-fluid">
+  <div class="span6" style="height:400px !important; overflow:scroll;">
+  {% if user.id == this_user.id: %}
+    <div id="codearea"><textarea id="code" name="code" class="span12" rows="35"></textarea></div>
+  {% else: %}
+    <pre id="pre-code"></pre>
+  {% endif %}
+  </div>
+  <div class="span6" style="height:400px !important; overflow:scroll;">
+    <pre id="result"></pre>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="row">
+  <div class="span12">
+    <input id="chat-input" class="span12 input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
+  </div>
+  <div class="span11" style="height:200px !important; overflow:scroll;">
+    <div type="text" id="chat-output"></div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $('#chat-input').keyup(function(e){
+      if (e.keyCode == 13) {
+          $.post('/chat/{{user.id}}', {'message': $(this).val()});
+          $(this).val('');
+      }
+  });
+
+  $(function() {
+    var result = new EventSource('/stream/{{user.id}}');
+    result.onmessage = function(e) {
+      if (e.data == ''){ return; }
+      var data = $.parseJSON(e.data);
+      {% if user.id != this_user.id: %}
+        if (data['code']) { $('#pre-code').html(data.code); }
+      {% endif %}
+
+      if (data.output) { $('#result').html(data.output); }
+      if (data.chat) { $('#chat-output').html( data.chat + $('#chat-output').html() ); }
+    };
+  });
+</script>
+
+{% if user.id == this_user.id: %}
+  <script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
+  <script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
+
+  <script type="text/javascript">
+    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+      mode: {name: "python", version: 2, singleLineStringErrors: false},
+      lineNumbers: true,
+      indentUnit: 3,
+      tabMode: "shift",
+      // matchBrackets: true,
+      onKeyEvent : function( ed, ev ) {
+        if (ev.keyCode == 13){
+          if ( ev.shiftKey && ev.type == 'keyup' ) {
+            $.post('/run_code/{{user.id}}', {'code': editor.getValue()});
+            ev.preventDefault();
+          }
+        }
+      }
+    });
+    $(function() {
+      editor.focus();
+      return false;
+    });
+  </script>
+{% endif %}
+
+{% endblock %}
