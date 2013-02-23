@@ -108,9 +108,9 @@ def init_user_table():
    	admin.save()
 
 # ----------------------------------------------------------------------------
-@app.route('/users', methods=['GET','POST'])
+@app.route('/students', methods=['GET','POST'])
 @auth.login_required
-def users():
+def students():
 	cur_user = auth.get_logged_in_user()
 	if cur_user.username != 'admin':
 		flash('you do not have permission to view this page')
@@ -124,7 +124,7 @@ def users():
 		user.save()
 		flash('user %d created' % user.id)
 		return redirect(url_for('users'))
-	return render_template('users.html', users=auth.User.select())
+	return render_template('students.html', users=auth.User.select())
 
 # ----------------------------------------------------------------------------
 @app.route('/user/edit', methods=['GET','POST'])

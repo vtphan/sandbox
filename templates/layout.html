@@ -25,13 +25,15 @@ body {
          <span class="icon-bar"></span>
          <span class="icon-bar"></span>
          </button>
-         <a class="brand" href="{{url_for('index')}}">Sandbox</a>
+         <a class="brand" href="{{url_for('index')}}">CoPro</a>
          <div class="nav-collapse collapse">
             <ul class="nav">
                {% if this_user.username == 'admin': %}
-                  <li><a href="{{url_for('users')}}">Users</a></li>
+                  <li><a href="{{url_for('students')}}">Students</a></li>
+               {% else: %}
+                  <li><a href="{{url_for('sandbox', uid=1)}}">Teacher's sandbox</a></li>
                {% endif %}
-               <li><a href="{{url_for('sandbox')}}">Sandbox</a></li>
+               <li><a href="{{url_for('sandbox')}}">My sandbox</a></li>
             </ul>
          </div><!--/.nav-collapse -->
 
