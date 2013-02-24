@@ -29,7 +29,7 @@ body {
          <div class="nav-collapse collapse">
             <ul class="nav">
                {% if this_user.username == 'admin': %}
-                  <li><a href="{{url_for('students')}}">Students</a></li>
+                  <li><a href="{{url_for('users')}}">Users</a></li>
                {% else: %}
                   <li><a href="{{url_for('sandbox', uid=1)}}">Teacher's sandbox</a></li>
                {% endif %}

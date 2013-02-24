@@ -103,40 +103,36 @@ def init_user_table():
    auth.User.create_table(fail_silently=True)
    if auth.User.select().count() == 0:
    	admin = auth.User(username='admin',email='admin@localhost')
-   	admin.is_active = True
+   	admin.active = True
+   	admin.admin = True
+   	admin.role = 'teacher'
    	admin.set_password('password')
    	admin.save()
 
 # ----------------------------------------------------------------------------
-@app.route('/students', methods=['GET','POST'])
-@auth.login_required
-def students():
+@app.route('/users', methods=['GET','POST'])
+@auth.role_required('teacher')
+def users():
 	cur_user = auth.get_logged_in_user()
-	if cur_user.username != 'admin':
-		flash('you do not have permission to view this page')
-		return redirect(url_for('index'))
 
 	if request.method == 'POST':
 		user = auth.User(username=request.form['username'])
 		user.email = request.form['username'] + '@memphis.edu'
 		user.set_password(request.form['username'])
 		user.active = True
+		user.role = 'student'
 		user.save()
 		flash('user %d created' % user.id)
 		return redirect(url_for('users'))
-	return render_template('students.html', users=auth.User.select())
+	return render_template('users.html', users=auth.User.select())
 
 # ----------------------------------------------------------------------------
 @app.route('/user/edit', methods=['GET','POST'])
 @app.route('/user/edit/<int:uid>', methods=['GET','POST'])
-@auth.login_required
+@auth.role_required('teacher')
 def user_edit(uid=None):
 	cur_user = auth.get_logged_in_user()
 	uid = cur_user.id if uid is None else uid
-	if cur_user.username != 'admin' and cur_user.id != uid:
-		flash('you do not have permission to view this page')
-		return redirect(url_for('index'))
-
 	user = cur_user if cur_user.id==uid else auth.User.get(auth.User.id==uid)
 
 	if request.method == 'POST':
@@ -147,6 +143,7 @@ def user_edit(uid=None):
  		else:
 			user.active = 'active' in request.form
 			user.email = request.form['email']
+			user.role = request.form['role']
 			if request.form['new_password']:
 				user.set_password(request.form['new_password'])
 			user.save()
@@ -165,7 +162,6 @@ def logout():
 # ----------------------------------------------------------------------------
 @app.route('/')
 def index():
-	u = auth.get_logged_in_user()
 	return render_template('index.html')
 
 # ----------------------------------------------------------------------------

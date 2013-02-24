@@ -51,6 +51,7 @@ class Auth(object):
             email = CharField(unique=True)
             active = BooleanField()
             admin = BooleanField(default=False)
+            role = CharField(default='')
 
             def __unicode__(self):
                 return self.username
@@ -63,7 +64,7 @@ class Auth(object):
             model_admin = ModelAdmin
 
         class UserAdmin(model_admin):
-            columns = ['username', 'email', 'active', 'admin']
+            columns = ['username', 'email', 'active', 'admin', 'role']
 
             def save_model(self, instance, form, adding=False):
                 orig_password = instance.password
@@ -94,27 +95,36 @@ class Auth(object):
         return (
             ('/logout/', self.logout),
             ('/login/', self.login),
+            ('/permission_denied', self.permission_denied),
         )
 
     def get_login_form(self):
         return LoginForm
 
-    def test_user(self, test_fn):
+    def test_user(self, test_fn, role_check=False):
         def decorator(fn):
             @functools.wraps(fn)
             def inner(*args, **kwargs):
                 user = self.get_logged_in_user()
-                
+
                 if not user or not test_fn(user):
-                    login_url = url_for('%s.login' % self.blueprint.name, next=get_next())
-                    return redirect(login_url)
+                    if role_check:
+                        url = url_for('%s.permission_denied' % self.blueprint.name)
+                    else:
+                        url = url_for('%s.login' % self.blueprint.name, next=get_next())
+                    return redirect(url)
                 return fn(*args, **kwargs)
             return inner
         return decorator
 
+    def role_required(self, role):
+        def foo(func):
+            return self.test_user(lambda u: u.role==role, True)(func)
+        return foo
+
     def login_required(self, func):
         return self.test_user(lambda u: True)(func)
-    
+
     def admin_required(self, func):
         return self.test_user(lambda u: u.admin)(func)
 
@@ -152,7 +162,7 @@ class Auth(object):
 
             try:
                 return self.User.select().where(
-                    self.User.active==True, 
+                    self.User.active==True,
                     self.User.id==session.get('user_pk')
                 ).get()
             except self.User.DoesNotExist:
@@ -188,6 +198,9 @@ class Auth(object):
             request.args.get('next') or \
             self.default_next_url
         )
+
+    def permission_denied(self):
+        return render_template('auth/permission_denied.html')
 
     def configure_routes(self):
         for url, callback in self.get_urls():
