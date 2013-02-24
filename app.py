@@ -11,9 +11,9 @@ import redis
 
 from flask import Flask, Response, jsonify, render_template, session, request,\
 	redirect, url_for, flash
-from flask_peewee.auth import Auth
 from flask_peewee.db import Database
 from peewee import *
+from auth import Auth
 
 # ----------------------------------------------------------------------------
 DATABASE = { 'name': 'sandbox.db', 'engine': 'peewee.SqliteDatabase' }
