@@ -1,0 +1,14 @@
+
++ Shareable sandboxes
++ Brownie point
+
+
+To do:
+
+- Everyone can chat with anyone.
+   - if code space is not viewable, then do not show codes or output
+- Each student can let his sandbox public.
+- Teacher can make any sandbox public.
+- Each student can lock his sandbox (e.g. when he finishes his work)
+   (those who have locked their sandboxes can view other students' sandboxes.)
+- Teacher can unlock any student's sandbox and everyone's sandbox at once.

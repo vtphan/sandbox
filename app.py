@@ -33,6 +33,12 @@ def add_user_to_template():
     return dict(this_user=auth.get_logged_in_user())
 
 # ----------------------------------------------------------------------------
+@auth.after_login
+def after_login():
+	user = auth.get_logged_in_user()
+	session['view_everyone_sandbox'] = user.role=='teacher'
+
+# ----------------------------------------------------------------------------
 # Sandbox management
 # ----------------------------------------------------------------------------
 
@@ -40,30 +46,44 @@ def add_user_to_template():
 @app.route('/sandbox/<int:uid>')
 @auth.login_required
 def sandbox(uid=None):
-	user = auth.get_logged_in_user()
-	if user.username != 'admin' and uid is not None:
-		return redirect(url_for('index'))
-
 	if uid is not None:
 		try:
 			user = auth.User.get(auth.User.id == uid)
 		except auth.User.DoesNotExist:
+			flash('User does not exist')
 			return redirect(url_for('index'))
 
-	return render_template('sandbox.html', user=user)
+		cur_user = auth.get_logged_in_user()
+		show_editor = (cur_user.id == uid)
+
+		# if cur_user.id != uid and session['view_everyone_sandbox'] == False:
+		# 	flash('You can only view your own sandbox at this time.')
+		# 	return redirect(url_for('index'))
+	else:
+		user = auth.get_logged_in_user()
+		if user.role == 'teacher':
+			return redirect(url_for('sandbox_teacher'))
+		show_editor = True
+
+	return render_template('sandbox.html', user=user, board_name=user.username,
+		channel=user.id, show_editor=show_editor)
 
 # ----------------------------------------------------------------------------
-@app.route('/chat/<int:uid>', methods=['POST'])
-def chat(uid):
+
+@app.route('/sandbox/teacher')
+@auth.login_required
+def sandbox_teacher():
 	user = auth.get_logged_in_user()
-	now = datetime.datetime.now().replace(microsecond=0).time()
-	message = '[%s] %s: %s<br/>' % (now.isoformat(), user.username, request.form['message'])
-	red.publish('channel-%s' % uid, u'%s' % json.dumps({'chat':message}))
-	return ''
+	if user.role == 'teacher':
+		show_editor = True
+	else:
+		show_editor = False
+
+	return render_template('sandbox.html', user=user, board_name='teacher',
+		channel='teacher', show_editor=show_editor)
 
 # ----------------------------------------------------------------------------
-@app.route('/run_code/<int:uid>', methods=['POST'])
-def run_code(uid):
+def execute_python_code(code):
 	def run_code_now(code_file):
 		try:
 			output = check_output(['/usr/local/bin/python', code_file], stderr=subprocess.STDOUT)
@@ -71,30 +91,53 @@ def run_code(uid):
 			output = err.output
 		return output.replace('\n', '<br>')
 
-	code = request.form['code']
-	code = code.replace(u'\xa0', u' ')
-
 	fn = 'sb_' + ''.join(random.choice(string.letters) for i in xrange(20)) + '.py'
 	fn = os.path.join(tempfile.mkdtemp(), fn)
 	with open(fn, 'w') as f:
 		f.write(code)
-	output = run_code_now(fn)
 
-	message = json.dumps({'output':output, 'code':code})
-	red.publish('channel-%s' % uid, u'%s' % message)
+	return run_code_now(fn)
+
+# ----------------------------------------------------------------------------
+@app.route('/send_message/<channel>', methods=['POST'])
+def send_message(channel):
+	mesg_type = request.form['type']
+	message = request.form['message']
+	if mesg_type == 'chat':
+		user = auth.get_logged_in_user()
+		now = datetime.datetime.now().replace(microsecond=0).time()
+		m = '[%s] %s> %s<br/>' % (now.isoformat(), user.username, request.form['message'])
+		stream_message = json.dumps({'chat': m})
+
+	elif mesg_type == 'code':
+		code = message.replace(u'\xa0', u' ')
+		output = execute_python_code(message)
+		stream_message = json.dumps({'output':output, 'code':code})
+
+	elif mesg_type == 'code_noexec':
+		code = message.replace(u'\xa0', u' ')
+		stream_message = json.dumps({'code':code})
+
+	red.publish('channel-%s' % channel, u'%s' % stream_message)
 	return ''
 
 # ----------------------------------------------------------------------------
-@app.route('/stream/<int:uid>')
-def stream(uid):
+@app.route('/stream/<channel>')
+def stream(channel):
 	def event_stream():
 		pubsub = red.pubsub()
-		pubsub.subscribe('channel-%s' % uid)
+		pubsub.subscribe('channel-%s' % channel)
 		for message in pubsub.listen():
 			yield 'data: {0}\n\n'.format(message['data'])
 
 	return Response(event_stream(), mimetype="text/event-stream")
 
+
+# ----------------------------------------------------------------------------
+@app.route('/students')
+@auth.role_required('teacher')
+def students():
+	return render_template('students.html', students=auth.User.select().where(auth.User.role=='student'))
 
 # ----------------------------------------------------------------------------
 # User management

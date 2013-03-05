@@ -28,12 +28,11 @@ body {
          <a class="brand" href="{{url_for('index')}}">CoPro</a>
          <div class="nav-collapse collapse">
             <ul class="nav">
-               {% if this_user.username == 'admin': %}
+               {% if this_user.role == 'teacher': %}
+                  <li><a href="{{url_for('students')}}">Students</a></li>
                   <li><a href="{{url_for('users')}}">Users</a></li>
-               {% else: %}
-                  <li><a href="{{url_for('sandbox', uid=1)}}">Teacher's sandbox</a></li>
                {% endif %}
-               <li><a href="{{url_for('sandbox')}}">My sandbox</a></li>
+               <li><a href="{{url_for('sandbox_teacher')}}">Teacher's sandbox</a></li>
             </ul>
          </div><!--/.nav-collapse -->
 

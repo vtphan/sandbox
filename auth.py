@@ -39,7 +39,10 @@ class Auth(object):
         self.clear_session = clear_session
         self.default_next_url = default_next_url
 
+        self.exec_after_login = []
+
         self.setup()
+
 
     def get_context_user(self):
         return {'user': self.get_logged_in_user()}
@@ -140,12 +143,19 @@ class Auth(object):
 
         return user
 
+    def after_login(self, f):
+        self.exec_after_login.append(f)
+        return f
+
     def login_user(self, user):
         session['logged_in'] = True
         session['user_pk'] = user.get_id()
         session.permanent = True
         g.user = user
         flash('You are logged in as %s' % user.username, 'success')
+
+        for f in self.exec_after_login:
+            f()
 
     def logout_user(self, user):
         if self.clear_session:

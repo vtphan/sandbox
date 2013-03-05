@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<strong>{{user.username}}'s whiteboard</strong>
+<strong>{{board_name}}'s whiteboard</strong>
 
 <!-- CODE and OUTPUT -->
 <div class="row-fluid">
   <div class="span6" style="height:400px !important; overflow:scroll;">
-  {% if user.id == this_user.id: %}
+  {% if show_editor: %}
     <div id="codearea"><textarea id="code" name="code" class="span12" rows="35"></textarea></div>
   {% else: %}
     <pre id="pre-code"></pre>
@@ -28,19 +28,21 @@
 </div>
 
 <script type="text/javascript">
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   $('#chat-input').keyup(function(e){
       if (e.keyCode == 13) {
-          $.post('/chat/{{user.id}}', {'message': $(this).val()});
+          $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': $(this).val(), 'type':'chat'});
           $(this).val('');
       }
   });
 
   $(function() {
-    var result = new EventSource('/stream/{{user.id}}');
+    var result = new EventSource('/stream/{{channel}}');
     result.onmessage = function(e) {
       if (e.data == ''){ return; }
       var data = $.parseJSON(e.data);
-      {% if user.id != this_user.id: %}
+
+      {% if not show_editor: %}
         if (data['code']) { $('#pre-code').html(data.code); }
       {% endif %}
 
@@ -50,12 +52,13 @@
   });
 </script>
 
-{% if user.id == this_user.id: %}
+{% if show_editor: %}
   <script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
   <script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
 
   <script type="text/javascript">
+    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
       mode: {name: "python", version: 2, singleLineStringErrors: false},
       lineNumbers: true,
@@ -65,9 +68,12 @@
       onKeyEvent : function( ed, ev ) {
         if (ev.keyCode == 13){
           if ( ev.shiftKey && ev.type == 'keyup' ) {
-            $.post('/run_code/{{user.id}}', {'code': editor.getValue()});
-            ev.preventDefault();
+            $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': editor.getValue(), 'type':'code'});
           }
+          else {
+            $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': editor.getValue(), 'type':'code_noexec'});
+          }
+          ev.preventDefault();
         }
       }
     });
