@@ -1,7 +1,8 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<strong>{{board_name}}'s whiteboard</strong>
+<div id="channel-name">{{channel_name}}'s whiteboard</div>
+<input type="hidden" value="{{channel}}" id="channel" />
 
 <!-- CODE and OUTPUT -->
 <div class="row-fluid">
@@ -19,36 +20,58 @@
 
 <!-- CHAT -->
 <div class="row">
-  <div class="span12">
-    <input id="chat-input" class="span12 input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
+  <div class="span6">
+    <input id="chat-input" class="input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
+    <div style="height:200px !important; overflow:scroll;">
+      <div type="text" id="chat-output"></div>
+    </div>
   </div>
-  <div class="span11" style="height:200px !important; overflow:scroll;">
-    <div type="text" id="chat-output"></div>
+  <div class="span6">
+    {% for s in students: %}
+    <div><a href="{{s.id}}" class="channel">{{ s.username }}</a></div>
+    {% endfor %}
   </div>
 </div>
 
 <script type="text/javascript">
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-  $('#chat-input').keyup(function(e){
-      if (e.keyCode == 13) {
-          $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': $(this).val(), 'type':'chat'});
-          $(this).val('');
+
+  function parse_streaming_message(c){
+   function f(e) {
+      var channel_data = $.parseJSON(e.data);
+      if (channel_data['channel-' + c]) {
+        var data = channel_data['channel-' + c];
+
+        {% if not show_editor: %}
+          if (data['code']) { $('#pre-code').html(data.code); }
+        {% endif %}
+
+        if (data.output) { $('#result').html(data.output); }
+        if (data.chat) { $('#chat-output').html( data.chat + $('#chat-output').html() ); }
       }
-  });
+    }
 
-  $(function() {
+    return f;
+  }
+
+  $(document).ready(function(){
+    $('#chat-input').keyup(function(e){
+      if (e.keyCode == 13) {
+        $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','channel':$('#channel').val()});
+        $(this).val('');
+      }
+    });
+
+    /* this does not allow efficient channel switching */
     var result = new EventSource('/stream/{{channel}}');
-    result.onmessage = function(e) {
-      if (e.data == ''){ return; }
-      var data = $.parseJSON(e.data);
-
-      {% if not show_editor: %}
-        if (data['code']) { $('#pre-code').html(data.code); }
-      {% endif %}
-
-      if (data.output) { $('#result').html(data.output); }
-      if (data.chat) { $('#chat-output').html( data.chat + $('#chat-output').html() ); }
-    };
+    result.onmessage = parse_streaming_message( $('#channel').val() );
+    $('.channel').click(function(e){
+      var cid = $(this).attr('href');
+      $('#channel-name').html(cid + "'s whiteboard");
+      $('#channel').val(cid);
+      result.onmessage = parse_streaming_message( $('#channel').val() );
+      e.preventDefault();
+    });
   });
 </script>
 
@@ -68,10 +91,11 @@
       onKeyEvent : function( ed, ev ) {
         if (ev.keyCode == 13){
           if ( ev.shiftKey && ev.type == 'keyup' ) {
-            $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': editor.getValue(), 'type':'code'});
+            $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code', 'channel':$('#channel').val()});
+            $('#result').html('running...');
           }
           else {
-            $.post($SCRIPT_ROOT + '/send_message/{{channel}}', {'message': editor.getValue(), 'type':'code_noexec'});
+            $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code_noexec', 'channel':$('#channel').val()});
           }
           ev.preventDefault();
         }

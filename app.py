@@ -65,8 +65,10 @@ def sandbox(uid=None):
 			return redirect(url_for('sandbox_teacher'))
 		show_editor = True
 
-	return render_template('sandbox.html', user=user, board_name=user.username,
-		channel=user.id, show_editor=show_editor)
+	students=auth.User.select().where(auth.User.role=='student')
+
+	return render_template('sandbox.html', channel_name=user.username,
+		channel=user.id, show_editor=show_editor, students=students)
 
 # ----------------------------------------------------------------------------
 
@@ -79,9 +81,11 @@ def sandbox_teacher():
 	else:
 		show_editor = False
 
-	return render_template('sandbox.html', user=user, board_name='teacher',
+	return render_template('sandbox.html', channel_name='teacher',
 		channel='teacher', show_editor=show_editor)
 
+# ----------------------------------------------------------------------------
+# Streaming, sending messages among channels
 # ----------------------------------------------------------------------------
 def execute_python_code(code):
 	def run_code_now(code_file):
@@ -99,25 +103,28 @@ def execute_python_code(code):
 	return run_code_now(fn)
 
 # ----------------------------------------------------------------------------
-@app.route('/send_message/<channel>', methods=['POST'])
-def send_message(channel):
+@app.route('/send_message', methods=['POST'])
+def send_message():
 	mesg_type = request.form['type']
 	message = request.form['message']
+	channel = request.form['channel']
+
 	if mesg_type == 'chat':
 		user = auth.get_logged_in_user()
 		now = datetime.datetime.now().replace(microsecond=0).time()
 		m = '[%s] %s> %s<br/>' % (now.isoformat(), user.username, request.form['message'])
-		stream_message = json.dumps({'chat': m})
+		stream_message = {'chat': m}
 
 	elif mesg_type == 'code':
-		code = message.replace(u'\xa0', u' ')
+		# code = message.replace(u'\xa0', u' ')
 		output = execute_python_code(message)
-		stream_message = json.dumps({'output':output, 'code':code})
+		stream_message = {'output':output, 'code':message}
 
 	elif mesg_type == 'code_noexec':
 		code = message.replace(u'\xa0', u' ')
-		stream_message = json.dumps({'code':code})
+		stream_message = {'code':code}
 
+	stream_message = json.dumps({ 'channel-%s' % channel : stream_message })
 	red.publish('channel-%s' % channel, u'%s' % stream_message)
 	return ''
 
