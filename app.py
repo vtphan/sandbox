@@ -46,10 +46,8 @@ def after_login():
 @auth.login_required
 def sandbox():
 	this_user = auth.get_logged_in_user()
-	this_user_channel = 'channel-' + this_user.id
 	users = auth.User.select()
-	return render_template('sandbox.html', this_user=this_user, users=users,
-		this_user_channel=this_user_channel)
+	return render_template('sandbox.html', this_user=this_user, users=users)
 
 # ----------------------------------------------------------------------------
 # Streaming, sending messages among channels

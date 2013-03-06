@@ -1,74 +1,119 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<div id="channel-name">{{channel_name}}'s whiteboard</div>
-<input type="hidden" value="{{chanid}}" id="channel" />
+<input type="hidden" id="chanid" value="{{this_user.id}}" />
 
-<!-- CODE and OUTPUT -->
-<div class="row-fluid">
-  <div class="span6" style="height:400px !important; overflow:scroll;">
-  {% if show_editor: %}
-    <div id="codearea"><textarea id="code" name="code" class="span12" rows="35"></textarea></div>
-  {% else: %}
-    <pre id="pre-code"></pre>
-  {% endif %}
-  </div>
-  <div class="span6" style="height:400px !important; overflow:scroll;">
-    <pre id="result"></pre>
-  </div>
-</div>
+<div class="tabbable tabs-right">
+  <ul class="nav nav-tabs">
+    {% for u in users: %}
+    <li class="menu{{u.id}} {% if u.id==this_user.id: %}active{% endif %}">
+      <a href="#tab{{u.id}}" data-toggle="tab">
+        {% if this_user.id==u.id: %}me{% else: %}{{u.username}}{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="tab-content">
+    {% for u in users: %}
+      <div class="tab-pane {% if u.id==this_user.id: %}active{% endif %}" id="tab{{u.id}}">
+        <div>{{u.username}}'s whiteboard</div>
 
-<!-- CHAT -->
-<div class="row">
-  <div class="span6">
-    <input id="chat-input" class="input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
-    <div style="height:200px !important; overflow:scroll;">
-      <div type="text" id="chat-output"></div>
-    </div>
-  </div>
-  <div class="span6">
-    {% for s in students: %}
-    <div><a href="{{s.id}}" class="channel">{{ s.username }}</a></div>
+        <!-- CODE and OUTPUT -->
+        <div class="row-fluid">
+          <div class="span6" style="height:400px !important; overflow:scroll;">
+            {% if u.id==this_user.id: %}
+              <textarea id="code{{u.id}}" name="code{{u.id}}" class="span12" rows="35"></textarea>
+            {% else: %}
+              <pre id="code{{u.id}}"></pre>
+            {% endif %}
+          </div>
+          <div class="span6" style="height:400px !important; overflow:scroll;">
+            <pre id="result{{u.id}}"></pre>
+          </div>
+        </div>
+
+        <!-- CHAT -->
+        <div class="row">
+          <div class="span10">
+            <div style="height:200px !important; overflow:scroll;">
+              <div type="text" id="chat-output{{u.id}}"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     {% endfor %}
   </div>
 </div>
+<input id="chat-input" class="span12 input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
+
+
+
+
+<script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
+<script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
 
 <script type="text/javascript">
+  function readonly_codespace(id) {
+    CodeMirror.fromTextArea(document.getElementById("code" + id), {
+      mode: {name: "python", version: 2, singleLineStringErrors: false},
+      lineNumbers: true,
+      indentUnit: 3,
+    });
+  }
+
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-
-  function parse_streaming_message(c){
-   function f(e) {
-      var channel_data = $.parseJSON(e.data);
-      if (channel_data['channel-' + c]) {
-        var data = channel_data['channel-' + c];
-
-        {% if not show_editor: %}
-          if (data['code']) { $('#pre-code').html(data.code); }
-        {% endif %}
-
-        if (data.output) { $('#result').html(data.output); }
-        if (data.chat) { $('#chat-output').html( data.chat + $('#chat-output').html() ); }
+  var editor = CodeMirror.fromTextArea(document.getElementById("code{{this_user.id}}"), {
+    mode: {name: "python", version: 2, singleLineStringErrors: false},
+    lineNumbers: true,
+    indentUnit: 3,
+    tabMode: "shift",
+    // matchBrackets: true,
+    onKeyEvent : function( ed, ev ) {
+      if (ev.keyCode == 13){
+        if ( ev.shiftKey && ev.type == 'keyup' ) {
+          $.post($SCRIPT_ROOT + '/send_message',
+            { 'message': editor.getValue(), 'type':'code', 'chanid':{{this_user.id}} });
+          $('#result').html('running...');
+        }
+        else {
+          $.post($SCRIPT_ROOT + '/send_message',
+            {'message': editor.getValue(), 'type':'code_noexec', 'chanid':{{this_user.id}} });
+        }
+        ev.preventDefault();
       }
     }
+  });
 
-    return f;
-  }
+  var codespace = new Object;
+  {% for u in users: %}
+    {% if u.id != this_user.id: %}
+      codespace[{{u.id}}] = readonly_codespace({{u.id}});
+    {% endif %}
+  {% endfor %}
+
 
   $(document).ready(function(){
     $('#chat-input').keyup(function(e){
       if (e.keyCode == 13) {
-        $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','channel':$('#channel').val()});
+        $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','chanid':$('#chanid').val()});
         $(this).val('');
       }
     });
+    {% for u in users: %}
+    $('.menu{{u.id}}').click(function(e){
+      $('#chanid').val({{u.id}});
+    });
+    {% endfor %}
 
     var result = new EventSource('/stream');
     result.onmessage = function (e) {
-      var this_user_channel = "{{this_user_channel}}";
+      var this_user_id = "{{this_user.id}}";
+      var this_user_name = "{{this_user.username}}";
       var data = $.parseJSON(e.data);
       var chanid = data.chanid;
 
-      if (data['code'] && this_user_channel!=channel) {
+      if (data['code'] && this_user_id!=chanid) {
         $('#code' + chanid).html(data.code);
       }
       if (data.output) {
@@ -78,38 +123,9 @@
         $('#chat-output' + chanid).html( data.chat + $('#chat-output' + chanid).html() );
       }
     }
-  });
-</script>
 
-<script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
-<link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
-<script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
-
-<script type="text/javascript">
-  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-  var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-    mode: {name: "python", version: 2, singleLineStringErrors: false},
-    lineNumbers: true,
-    indentUnit: 3,
-    tabMode: "shift",
-    // matchBrackets: true,
-    onKeyEvent : function( ed, ev ) {
-      if (ev.keyCode == 13){
-        if ( ev.shiftKey && ev.type == 'keyup' ) {
-          $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code', 'chanid':$('#chanid').val()});
-          $('#result').html('running...');
-        }
-        else {
-          $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code_noexec', 'chanid':$('#chanid').val()});
-        }
-        ev.preventDefault();
-      }
-    }
-  });
-  $(function() {
     editor.focus();
-    // editor.setOption("readOnly", true);
-    return false;
+
   });
 </script>
 
