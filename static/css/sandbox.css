@@ -1,0 +1,16 @@
+body {
+  padding-top: 50px; /* 60px to make the container go all the way to the bottom of the topbar */
+}
+.codespace{
+   height:420px !important; overflow:scroll;
+}
+.chatspace{
+   height:380px !important; overflow:scroll;
+}
+.resultspace{
+   height:200px !important; overflow:scroll;
+   font-size: 87%;
+}
+.time-light {
+   color: #ddd;
+}

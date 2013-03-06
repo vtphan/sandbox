@@ -18,33 +18,33 @@
       <div class="tab-pane {% if u.id==this_user.id: %}active{% endif %}" id="tab{{u.id}}">
         <div>{{u.username}}'s whiteboard</div>
 
-        <!-- CODE and OUTPUT -->
         <div class="row-fluid">
-          <div class="span6" style="height:400px !important; overflow:scroll;">
+          <!-- CODE  -->
+          <div class="span8">
             {% if u.id==this_user.id: %}
               <textarea id="code{{u.id}}" name="code{{u.id}}" class="span12" rows="35"></textarea>
             {% else: %}
-              <pre id="code{{u.id}}"></pre>
+              <pre id="code{{u.id}}" class="codespace"></pre>
             {% endif %}
           </div>
-          <div class="span6" style="height:400px !important; overflow:scroll;">
-            <pre id="result{{u.id}}"></pre>
+
+          <!-- CHAT -->
+          <div class="span4">
+            <input class="chat-input span12 input-tiny" type="text" placeholder="feedbacks..." />
+            <div id="chat-output{{u.id}}" class="chatspace"></div>
           </div>
         </div>
 
         <!-- CHAT -->
         <div class="row">
-          <div class="span10">
-            <div style="height:200px !important; overflow:scroll;">
-              <div type="text" id="chat-output{{u.id}}"></div>
-            </div>
+          <div class="span11">
+            <pre id="result{{u.id}}" class="resultspace"></pre>
           </div>
         </div>
       </div>
     {% endfor %}
   </div>
 </div>
-<input id="chat-input" class="span12 input-small" type="text" placeholder="feedbacks..." style="width:100%;"/>
 
 
 
@@ -54,14 +54,6 @@
 <script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
 
 <script type="text/javascript">
-  function readonly_codespace(id) {
-    CodeMirror.fromTextArea(document.getElementById("code" + id), {
-      mode: {name: "python", version: 2, singleLineStringErrors: false},
-      lineNumbers: true,
-      indentUnit: 3,
-    });
-  }
-
   $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   var editor = CodeMirror.fromTextArea(document.getElementById("code{{this_user.id}}"), {
     mode: {name: "python", version: 2, singleLineStringErrors: false},
@@ -85,16 +77,8 @@
     }
   });
 
-  var codespace = new Object;
-  {% for u in users: %}
-    {% if u.id != this_user.id: %}
-      codespace[{{u.id}}] = readonly_codespace({{u.id}});
-    {% endif %}
-  {% endfor %}
-
-
   $(document).ready(function(){
-    $('#chat-input').keyup(function(e){
+    $('.chat-input').keyup(function(e){
       if (e.keyCode == 13) {
         $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','chanid':$('#chanid').val()});
         $(this).val('');

@@ -78,7 +78,7 @@ def send_message():
 	if mesg_type == 'chat':
 		user = auth.get_logged_in_user()
 		now = datetime.datetime.now().replace(microsecond=0).time()
-		m = '[%s] %s> %s<br/>' % (now.isoformat(), user.username, request.form['message'])
+		m = '<span class="time-light">%s</span> <strong>%s</strong>: %s<br/>' % (now.strftime('%I:%M'), user.username, request.form['message'])
 		stream_message.update(chat=m)
 
 	elif mesg_type == 'code':

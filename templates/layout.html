@@ -4,17 +4,14 @@
 <title>Sandbox</title>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap-responsive.min.css') }}">
+
 <script type="text/javascript" src="{{url_for('static', filename='js/jquery-1.9.1.min.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static', filename='js/bootstrap.min.js')}}"></script>
 
 <script type="text/javascript">
 	$SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
 </script>
-<style>
-body {
-  padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
-}
-</style>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/sandbox.css') }}">
 </head>
 <body>
 <div class="navbar navbar-inverse navbar-fixed-top">
