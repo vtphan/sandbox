@@ -2,7 +2,7 @@
 {% block content %}
 
 <div id="channel-name">{{channel_name}}'s whiteboard</div>
-<input type="hidden" value="{{channel}}" id="channel" />
+<input type="hidden" value="{{chanid}}" id="channel" />
 
 <!-- CODE and OUTPUT -->
 <div class="row-fluid">
@@ -62,50 +62,55 @@
       }
     });
 
-    /* this does not allow efficient channel switching */
-    var result = new EventSource('/stream/{{channel}}');
-    result.onmessage = parse_streaming_message( $('#channel').val() );
-    $('.channel').click(function(e){
-      var cid = $(this).attr('href');
-      $('#channel-name').html(cid + "'s whiteboard");
-      $('#channel').val(cid);
-      result.onmessage = parse_streaming_message( $('#channel').val() );
-      e.preventDefault();
-    });
+    var result = new EventSource('/stream');
+    result.onmessage = function (e) {
+      var this_user_channel = "{{this_user_channel}}";
+      var data = $.parseJSON(e.data);
+      var chanid = data.chanid;
+
+      if (data['code'] && this_user_channel!=channel) {
+        $('#code' + chanid).html(data.code);
+      }
+      if (data.output) {
+        $('#result' + chanid).html(data.output);
+      }
+      if (data.chat) {
+        $('#chat-output' + chanid).html( data.chat + $('#chat-output' + chanid).html() );
+      }
+    }
   });
 </script>
 
-{% if show_editor: %}
-  <script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
-  <link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
-  <script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
+<script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
+<script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
 
-  <script type="text/javascript">
-    $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-      mode: {name: "python", version: 2, singleLineStringErrors: false},
-      lineNumbers: true,
-      indentUnit: 3,
-      tabMode: "shift",
-      // matchBrackets: true,
-      onKeyEvent : function( ed, ev ) {
-        if (ev.keyCode == 13){
-          if ( ev.shiftKey && ev.type == 'keyup' ) {
-            $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code', 'channel':$('#channel').val()});
-            $('#result').html('running...');
-          }
-          else {
-            $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code_noexec', 'channel':$('#channel').val()});
-          }
-          ev.preventDefault();
+<script type="text/javascript">
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+    mode: {name: "python", version: 2, singleLineStringErrors: false},
+    lineNumbers: true,
+    indentUnit: 3,
+    tabMode: "shift",
+    // matchBrackets: true,
+    onKeyEvent : function( ed, ev ) {
+      if (ev.keyCode == 13){
+        if ( ev.shiftKey && ev.type == 'keyup' ) {
+          $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code', 'chanid':$('#chanid').val()});
+          $('#result').html('running...');
         }
+        else {
+          $.post($SCRIPT_ROOT + '/send_message', {'message': editor.getValue(), 'type':'code_noexec', 'chanid':$('#chanid').val()});
+        }
+        ev.preventDefault();
       }
-    });
-    $(function() {
-      editor.focus();
-      return false;
-    });
-  </script>
-{% endif %}
+    }
+  });
+  $(function() {
+    editor.focus();
+    // editor.setOption("readOnly", true);
+    return false;
+  });
+</script>
 
 {% endblock %}

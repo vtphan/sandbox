@@ -43,46 +43,13 @@ def after_login():
 # ----------------------------------------------------------------------------
 
 @app.route('/sandbox')
-@app.route('/sandbox/<int:uid>')
 @auth.login_required
-def sandbox(uid=None):
-	if uid is not None:
-		try:
-			user = auth.User.get(auth.User.id == uid)
-		except auth.User.DoesNotExist:
-			flash('User does not exist')
-			return redirect(url_for('index'))
-
-		cur_user = auth.get_logged_in_user()
-		show_editor = (cur_user.id == uid)
-
-		# if cur_user.id != uid and session['view_everyone_sandbox'] == False:
-		# 	flash('You can only view your own sandbox at this time.')
-		# 	return redirect(url_for('index'))
-	else:
-		user = auth.get_logged_in_user()
-		if user.role == 'teacher':
-			return redirect(url_for('sandbox_teacher'))
-		show_editor = True
-
-	students=auth.User.select().where(auth.User.role=='student')
-
-	return render_template('sandbox.html', channel_name=user.username,
-		channel=user.id, show_editor=show_editor, students=students)
-
-# ----------------------------------------------------------------------------
-
-@app.route('/sandbox/teacher')
-@auth.login_required
-def sandbox_teacher():
-	user = auth.get_logged_in_user()
-	if user.role == 'teacher':
-		show_editor = True
-	else:
-		show_editor = False
-
-	return render_template('sandbox.html', channel_name='teacher',
-		channel='teacher', show_editor=show_editor)
+def sandbox():
+	this_user = auth.get_logged_in_user()
+	this_user_channel = 'channel-' + this_user.id
+	users = auth.User.select()
+	return render_template('sandbox.html', this_user=this_user, users=users,
+		this_user_channel=this_user_channel)
 
 # ----------------------------------------------------------------------------
 # Streaming, sending messages among channels
@@ -107,33 +74,33 @@ def execute_python_code(code):
 def send_message():
 	mesg_type = request.form['type']
 	message = request.form['message']
-	channel = request.form['channel']
+	chanid = request.form['chanid']
 
+	stream_message = { 'chanid' : chanid }
 	if mesg_type == 'chat':
 		user = auth.get_logged_in_user()
 		now = datetime.datetime.now().replace(microsecond=0).time()
 		m = '[%s] %s> %s<br/>' % (now.isoformat(), user.username, request.form['message'])
-		stream_message = {'chat': m}
+		stream_message.update(chat=m)
 
 	elif mesg_type == 'code':
 		# code = message.replace(u'\xa0', u' ')
 		output = execute_python_code(message)
-		stream_message = {'output':output, 'code':message}
+		stream_message.update(output=output, code=message)
 
 	elif mesg_type == 'code_noexec':
-		code = message.replace(u'\xa0', u' ')
-		stream_message = {'code':code}
+		# code = message.replace(u'\xa0', u' ')
+		stream_message.update(code=message)
 
-	stream_message = json.dumps({ 'channel-%s' % channel : stream_message })
-	red.publish('channel-%s' % channel, u'%s' % stream_message)
+	red.publish('sandbox', u'%s' % json.dumps(stream_message))
 	return ''
 
 # ----------------------------------------------------------------------------
-@app.route('/stream/<channel>')
-def stream(channel):
+@app.route('/stream')
+def stream():
 	def event_stream():
 		pubsub = red.pubsub()
-		pubsub.subscribe('channel-%s' % channel)
+		pubsub.subscribe('sandbox')
 		for message in pubsub.listen():
 			yield 'data: {0}\n\n'.format(message['data'])
 
