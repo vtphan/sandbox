@@ -3,6 +3,7 @@
 
 <input type="hidden" id="chanid" value="{{this_user.id}}" />
 <input type="hidden" id="my_uid" value="{{this_user.id}}" />
+<input type="hidden" id="I_can_view_all" value="{{this_user.view_all_boards}}" />
 
 <div class="tabbable tabs-right">
   <ul class="nav nav-tabs">
@@ -19,7 +20,6 @@
       <div class="tab-pane {% if u.id==this_user.id: %}active{% endif %}" id="tab{{u.id}}">
         <div>
           {{u.username}}'s whiteboard
-          <span id="user-board-status{{u.id}}"></span>
           [
           {% if this_user.id == u.id or logged_in_user.role=='teacher': %}
             <a href="#" id="show-my-board{{u.id}}">on/off</a>
@@ -98,7 +98,13 @@
     // setting up for all users
     {% for u in all_users: %}
       $('#show-my-board{{u.id}}').click(function(e){
-        $.get("{{url_for('toggle_board',uid=u.id)}}");
+        $.get("{{url_for('toggle_board',uid=u.id)}}", function(res) {
+          if (res == 'open'){
+            $('.menu{{u.id}} > a').css('color', 'red');
+          } else {
+            $('.menu{{u.id}} > a').css('color', '');
+          }
+        });
       });
 
       $('.menu{{u.id}}').click(function(e){
@@ -116,6 +122,9 @@
         $('.menu{{uid}}').show();
       {% endif %}
     {% endfor %}
+    {% if this_user.open_board: %}
+      $('.menu{{this_user.id}} > a').css('color','red');
+    {% endif %}
 
     // streaming messages from server
     var result = new EventSource('/stream');
@@ -137,12 +146,9 @@
         var info = data.update;
         if (info.open_board == true){
           $('.menu' + chanid).show();
-        } else {
-          if (chanid != $('#my_uid').val()) {
-            $('.menu' + chanid).hide();
-          }
+        } else if (chanid != $('#my_uid').val() && $('#I_can_view_all').val() != 'True') {
+          $('.menu' + chanid).hide();
         }
-
       }
     }
 

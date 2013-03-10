@@ -52,8 +52,8 @@ def toggle_board(uid):
 		s.open_board = not s.open_board
 		s.save()
 		broadcast_status(s)
-		return 'toggle board for user %s' % uid
-	return 'cannot toggle board for user %s' % uid
+		return 'open' if s.open_board else 'closed'
+	return 'illegal'
 
 # ----------------------------------------------------------------------------
 @app.route('/sandbox')
