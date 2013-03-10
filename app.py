@@ -15,6 +15,8 @@ from flask_peewee.db import Database
 from peewee import *
 from auth import Auth
 
+from student_record import UserRecord
+
 # ----------------------------------------------------------------------------
 DATABASE = { 'name': 'sandbox.db', 'engine': 'peewee.SqliteDatabase' }
 DEBUG = True
@@ -36,18 +38,42 @@ def add_user_to_template():
 @auth.after_login
 def after_login():
 	user = auth.get_logged_in_user()
-	session['view_everyone_sandbox'] = user.role=='teacher'
 
 # ----------------------------------------------------------------------------
 # Sandbox management
 # ----------------------------------------------------------------------------
 
+@app.route('/toggle_board/<int:uid>')
+@auth.login_required
+def toggle_board(uid):
+	user = auth.get_logged_in_user()
+	if user.id == uid or user.role == 'teacher':
+		s = UserRecord(uid)
+		s.open_board = not s.open_board
+		s.save()
+		broadcast_status(s)
+		return 'toggle board for user %s' % uid
+	return 'cannot toggle board for user %s' % uid
+
+# ----------------------------------------------------------------------------
 @app.route('/sandbox')
 @auth.login_required
 def sandbox():
-	this_user = auth.get_logged_in_user()
-	users = auth.User.select()
-	return render_template('sandbox.html', this_user=this_user, users=users)
+	logged_in_user = auth.get_logged_in_user()
+
+	this_user = UserRecord(logged_in_user.id)
+	if logged_in_user.role == 'teacher':
+		this_user.view_all_boards = True
+		this_user.open_board = True
+	this_user.save()
+
+	broadcast_status(this_user)
+
+	all_users = auth.User.select()
+	active_users = UserRecord.get_all()
+
+	return render_template('sandbox.html', this_user=this_user,
+		all_users=all_users, active_users=active_users, logged_in_user=logged_in_user)
 
 # ----------------------------------------------------------------------------
 # Streaming, sending messages among channels
@@ -68,6 +94,11 @@ def execute_python_code(code):
 	return run_code_now(fn)
 
 # ----------------------------------------------------------------------------
+def broadcast_status(user):
+	stream_message = { 'chanid' : user.id, 'update' : user.as_dict() }
+	red.publish('sandbox', u'%s' % json.dumps(stream_message))
+
+# ----------------------------------------------------------------------------
 @app.route('/send_message', methods=['POST'])
 def send_message():
 	mesg_type = request.form['type']
@@ -82,12 +113,10 @@ def send_message():
 		stream_message.update(chat=m)
 
 	elif mesg_type == 'code':
-		# code = message.replace(u'\xa0', u' ')
 		output = execute_python_code(message)
 		stream_message.update(output=output, code=message)
 
 	elif mesg_type == 'code_noexec':
-		# code = message.replace(u'\xa0', u' ')
 		stream_message.update(code=message)
 
 	red.publish('sandbox', u'%s' % json.dumps(stream_message))

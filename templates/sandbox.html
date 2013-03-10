@@ -2,10 +2,11 @@
 {% block content %}
 
 <input type="hidden" id="chanid" value="{{this_user.id}}" />
+<input type="hidden" id="my_uid" value="{{this_user.id}}" />
 
 <div class="tabbable tabs-right">
   <ul class="nav nav-tabs">
-    {% for u in users: %}
+    {% for u in all_users: %}
     <li class="menu{{u.id}} {% if u.id==this_user.id: %}active{% endif %}">
       <a href="#tab{{u.id}}" data-toggle="tab">
         {% if this_user.id==u.id: %}me{% else: %}{{u.username}}{% endif %}
@@ -14,9 +15,17 @@
     {% endfor %}
   </ul>
   <div class="tab-content">
-    {% for u in users: %}
+    {% for u in all_users: %}
       <div class="tab-pane {% if u.id==this_user.id: %}active{% endif %}" id="tab{{u.id}}">
-        <div>{{u.username}}'s whiteboard</div>
+        <div>
+          {{u.username}}'s whiteboard
+          <span id="user-board-status{{u.id}}"></span>
+          [
+          {% if this_user.id == u.id or logged_in_user.role=='teacher': %}
+            <a href="#" id="show-my-board{{u.id}}">on/off</a>
+          {% endif %}
+          ]
+        </div>
 
         <div class="row-fluid">
           <!-- CODE  -->
@@ -35,9 +44,9 @@
           </div>
         </div>
 
-        <!-- CHAT -->
+        <!-- RESULT -->
         <div class="row">
-          <div class="span11">
+          <div class="span10">
             <pre id="result{{u.id}}" class="resultspace"></pre>
           </div>
         </div>
@@ -78,38 +87,67 @@
   });
 
   $(document).ready(function(){
+    // sending chat messages
     $('.chat-input').keyup(function(e){
       if (e.keyCode == 13) {
         $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','chanid':$('#chanid').val()});
         $(this).val('');
       }
     });
-    {% for u in users: %}
-    $('.menu{{u.id}}').click(function(e){
-      $('#chanid').val({{u.id}});
-    });
+
+    // setting up for all users
+    {% for u in all_users: %}
+      $('#show-my-board{{u.id}}').click(function(e){
+        $.get("{{url_for('toggle_board',uid=u.id)}}");
+      });
+
+      $('.menu{{u.id}}').click(function(e){
+        $('#chanid').val({{u.id}});
+      });
+
+      {% if this_user.id != u.id %}
+        $('.menu{{u.id}}').hide();
+      {% endif %}
     {% endfor %}
 
+    // turning on active users
+    {% for uid, user in active_users.items(): %}
+      {% if user.open_board or active_users[this_user.id].view_all_boards: %}
+        $('.menu{{uid}}').show();
+      {% endif %}
+    {% endfor %}
+
+    // streaming messages from server
     var result = new EventSource('/stream');
     result.onmessage = function (e) {
       var this_user_id = "{{this_user.id}}";
-      var this_user_name = "{{this_user.username}}";
       var data = $.parseJSON(e.data);
       var chanid = data.chanid;
 
-      if (data['code'] && this_user_id!=chanid) {
+      if (data.code && this_user_id!=chanid) {
         $('#code' + chanid).html(data.code);
       }
       if (data.output) {
         $('#result' + chanid).html(data.output);
       }
       if (data.chat) {
-        $('#chat-output' + chanid).html( data.chat + $('#chat-output' + chanid).html() );
+        $('#chat-output' + chanid).append( data.chat );
+      }
+      if (data.update) {
+        var info = data.update;
+        if (info.open_board == true){
+          $('.menu' + chanid).show();
+        } else {
+          if (chanid != $('#my_uid').val()) {
+            $('.menu' + chanid).hide();
+          }
+        }
+
       }
     }
 
+    // turning on editor for the current user
     editor.focus();
-
   });
 </script>
 
