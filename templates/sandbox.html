@@ -39,7 +39,7 @@
 
           <!-- CHAT -->
           <div class="span4">
-            <input class="chat-input span12 input-tiny" type="text" placeholder="feedbacks..." />
+            <input class="chat-input span12 input-tiny" type="text" placeholder="chat..." />
             <div id="chat-output{{u.id}}" class="chatspace"></div>
           </div>
         </div>
@@ -98,13 +98,7 @@
     // setting up for all users
     {% for u in all_users: %}
       $('#show-my-board{{u.id}}').click(function(e){
-        $.get("{{url_for('toggle_board',uid=u.id)}}", function(res) {
-          if (res == 'open'){
-            $('.menu{{u.id}} > a').css('color', 'red');
-          } else {
-            $('.menu{{u.id}} > a').css('color', '');
-          }
-        });
+        $.get("{{url_for('toggle_board',uid=u.id)}}");
       });
 
       $('.menu{{u.id}}').click(function(e){
@@ -121,10 +115,10 @@
       {% if user.open_board or active_users[this_user.id].view_all_boards: %}
         $('.menu{{uid}}').show();
       {% endif %}
+      {% if user.open_board: %}
+        $('.menu{{uid}}').addClass('open-board');
+      {% endif %}
     {% endfor %}
-    {% if this_user.open_board: %}
-      $('.menu{{this_user.id}} > a').css('color','red');
-    {% endif %}
 
     // streaming messages from server
     var result = new EventSource('/stream');
@@ -140,14 +134,33 @@
         $('#result' + chanid).html(data.output);
       }
       if (data.chat) {
-        $('#chat-output' + chanid).append( data.chat );
+        var message = data.chat;
+        var time = data.time;
+        var from_user = data.username;
+        var from_uid = data.uid;
+        var m = '<span class="time-light">'+time+'</span> ' + '<strong>'+from_user+'</strong>: ' + message + '<br/>';
+        $('#chat-output' + chanid).append( m );
       }
       if (data.update) {
         var info = data.update;
         if (info.open_board == true){
           $('.menu' + chanid).show();
-        } else if (chanid != $('#my_uid').val() && $('#I_can_view_all').val() != 'True') {
-          $('.menu' + chanid).hide();
+          $('.menu' + chanid).addClass('open-board');
+        }
+        else {
+          if (chanid != $('#my_uid').val() && $('#I_can_view_all').val() != 'True') {
+            $('.menu' + chanid).hide();
+          }
+          $('.menu' + chanid).removeClass('open-board');
+
+          /* whoever is viewing the board is returned to his own board */
+          if ( $('#chanid').val() == chanid) {
+            $('.menu' + chanid).removeClass('active');
+            $('#tab' + chanid).removeClass('active');
+            $('.menu' + $('#my_uid').val()).addClass('active');
+            $('#tab' + $('#my_uid').val()).addClass('active');
+            $('#chanid').val($('#my_uid').val());
+          }
         }
       }
     }
