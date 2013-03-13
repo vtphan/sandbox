@@ -74,12 +74,12 @@
       if (ev.keyCode == 13){
         if ( ev.shiftKey && ev.type == 'keyup' ) {
           $.post($SCRIPT_ROOT + '/send_message',
-            { 'message': editor.getValue(), 'type':'code', 'chanid':{{this_user.id}} });
+            { message: editor.getValue(), type:'code', chanid:{{this_user.id}} });
           $('#result').html('running...');
         }
         else {
           $.post($SCRIPT_ROOT + '/send_message',
-            {'message': editor.getValue(), 'type':'code_noexec', 'chanid':{{this_user.id}} });
+            { message: editor.getValue(), type:'code_noexec', chanid:{{this_user.id}} });
         }
         ev.preventDefault();
       }
@@ -90,7 +90,7 @@
     // sending chat messages
     $('.chat-input').keyup(function(e){
       if (e.keyCode == 13) {
-        $.post($SCRIPT_ROOT+'/send_message',{'message': $(this).val(),'type':'chat','chanid':$('#chanid').val()});
+        $.post($SCRIPT_ROOT+'/send_message',{ message: $(this).val(), type:'chat', chanid:$('#chanid').val()});
         $(this).val('');
       }
     });

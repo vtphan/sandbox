@@ -16,4 +16,5 @@ body {
 }
 .open-board a{
    font-weight: bold;
+   /*color: red !important;*/
 }
