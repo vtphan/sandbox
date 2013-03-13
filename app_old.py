@@ -133,84 +133,84 @@ def stream():
 	return Response(event_stream(), mimetype="text/event-stream")
 
 
-# ----------------------------------------------------------------------------
-@app.route('/students')
-@auth.role_required('teacher')
-def students():
-	return render_template('students.html', students=auth.User.select().where(auth.User.role=='student'))
+# # ----------------------------------------------------------------------------
+# @app.route('/students')
+# @auth.role_required('teacher')
+# def students():
+# 	return render_template('students.html', students=auth.User.select().where(auth.User.role=='student'))
 
-# ----------------------------------------------------------------------------
-# User management
-# ----------------------------------------------------------------------------
-def init_user_table():
-   auth.User.create_table(fail_silently=True)
-   if auth.User.select().count() == 0:
-   	admin = auth.User(username='admin',email='admin@localhost')
-   	admin.active = True
-   	admin.admin = True
-   	admin.role = 'teacher'
-   	admin.set_password('password')
-   	admin.save()
+# # ----------------------------------------------------------------------------
+# # User management
+# # ----------------------------------------------------------------------------
+# def init_user_table():
+#    auth.User.create_table(fail_silently=True)
+#    if auth.User.select().count() == 0:
+#    	admin = auth.User(username='admin',email='admin@localhost')
+#    	admin.active = True
+#    	admin.admin = True
+#    	admin.role = 'teacher'
+#    	admin.set_password('password')
+#    	admin.save()
 
-# ----------------------------------------------------------------------------
-@app.route('/users', methods=['GET','POST'])
-@auth.role_required('teacher')
-def users():
-	cur_user = auth.get_logged_in_user()
+# # ----------------------------------------------------------------------------
+# @app.route('/users', methods=['GET','POST'])
+# @auth.role_required('teacher')
+# def users():
+# 	cur_user = auth.get_logged_in_user()
 
-	if request.method == 'POST':
-		user = auth.User(username=request.form['username'])
-		user.email = request.form['username'] + '@memphis.edu'
-		user.set_password(request.form['username'])
-		user.active = True
-		user.role = 'student'
-		user.save()
-		flash('user %d created' % user.id)
-		return redirect(url_for('users'))
-	return render_template('users.html', users=auth.User.select())
+# 	if request.method == 'POST':
+# 		user = auth.User(username=request.form['username'])
+# 		user.email = request.form['username'] + '@memphis.edu'
+# 		user.set_password(request.form['username'])
+# 		user.active = True
+# 		user.role = 'student'
+# 		user.save()
+# 		flash('user %d created' % user.id)
+# 		return redirect(url_for('users'))
+# 	return render_template('users.html', users=auth.User.select())
 
-# ----------------------------------------------------------------------------
-@app.route('/user/edit', methods=['GET','POST'])
-@app.route('/user/edit/<int:uid>', methods=['GET','POST'])
-@auth.role_required('teacher')
-def user_edit(uid=None):
-	cur_user = auth.get_logged_in_user()
-	uid = cur_user.id if uid is None else uid
-	user = cur_user if cur_user.id==uid else auth.User.get(auth.User.id==uid)
+# # ----------------------------------------------------------------------------
+# @app.route('/user/edit', methods=['GET','POST'])
+# @app.route('/user/edit/<int:uid>', methods=['GET','POST'])
+# @auth.role_required('teacher')
+# def user_edit(uid=None):
+# 	cur_user = auth.get_logged_in_user()
+# 	uid = cur_user.id if uid is None else uid
+# 	user = cur_user if cur_user.id==uid else auth.User.get(auth.User.id==uid)
 
-	if request.method == 'POST':
- 		if 'delete' in request.form:
- 			user.delete_instance()
- 			flash('User %s is deleted' % user.username)
-			return redirect(url_for('users'))
- 		else:
-			user.active = 'active' in request.form
-			user.email = request.form['email']
-			user.role = request.form['role']
-			if request.form['new_password']:
-				user.set_password(request.form['new_password'])
-			user.save()
-			flash('Information updated')
-			return redirect(url_for('user_edit', uid=user.id))
-	return render_template('user_edit.html', cur_user=cur_user, user=user)
+# 	if request.method == 'POST':
+#  		if 'delete' in request.form:
+#  			user.delete_instance()
+#  			flash('User %s is deleted' % user.username)
+# 			return redirect(url_for('users'))
+#  		else:
+# 			user.active = 'active' in request.form
+# 			user.email = request.form['email']
+# 			user.role = request.form['role']
+# 			if request.form['new_password']:
+# 				user.set_password(request.form['new_password'])
+# 			user.save()
+# 			flash('Information updated')
+# 			return redirect(url_for('user_edit', uid=user.id))
+# 	return render_template('user_edit.html', cur_user=cur_user, user=user)
 
-# ----------------------------------------------------------------------------
-@app.route('/logout')
-@auth.login_required
-def logout():
-   user = auth.get_logged_in_user()
-   auth.logout_user(user)
-   return redirect(url_for('index'))
+# # ----------------------------------------------------------------------------
+# @app.route('/logout')
+# @auth.login_required
+# def logout():
+#    user = auth.get_logged_in_user()
+#    auth.logout_user(user)
+#    return redirect(url_for('index'))
 
-# ----------------------------------------------------------------------------
-@app.route('/')
-def index():
-	return render_template('index.html')
+# # ----------------------------------------------------------------------------
+# @app.route('/')
+# def index():
+# 	return render_template('index.html')
 
-# ----------------------------------------------------------------------------
+# # ----------------------------------------------------------------------------
 
-init_user_table()
+# init_user_table()
 
-if __name__ == "__main__":
-	app.run()
+# if __name__ == "__main__":
+# 	app.run()
 
