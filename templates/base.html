@@ -23,29 +23,6 @@
          <span class="icon-bar"></span>
          </button>
          <a class="brand" href="{{url_for('index')}}">CoPro</a>
-         <div class="nav-collapse collapse">
-            <ul class="nav">
-               {% if this_user.role == 'teacher': %}
-                  <li><a href="{{url_for('students')}}">Students</a></li>
-                  <li><a href="{{url_for('users')}}">Users</a></li>
-               {% endif %}
-               <li><a href="{{url_for('sandbox')}}">Sandbox</a></li>
-            </ul>
-         </div><!--/.nav-collapse -->
-
-         <ul class="nav nav-pills pull-right">
-            {% if this_user == None: %}
-            <li><a href="/accounts/login">log in</a></li>
-            {% else: %}
-            <li class="dropdown">
-               <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="icon-user"></i> Welcome {{this_user.username}}</a>
-               <ul class="dropdown-menu">
-                  <li><a href="{{url_for('user_edit',uid=this_user.id)}}">edit</a></li>
-                  <li><a href="{{url_for('logout')}}">logout</a></li>
-               </ul>
-            {% endif %}
-         </ul>
-
      </div>
    </div>
  </div>
