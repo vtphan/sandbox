@@ -1,15 +1,13 @@
 import json
-from config import red
-from flask import request, Blueprint
+from config import red, app
+from flask import request, Blueprint, Response
 
 
 sse_bp = Blueprint('sse', __name__, template_folder='templates')
 
 sse_events = {}
-
-# look up how redis handles sets.
-# sse_channels = red.set('sse-channels')
-
+# ----------------------------------------------------------------------------
+# Decorator for server-side listeners; used by sse_send
 # ----------------------------------------------------------------------------
 def on_event(ev):
    '''
@@ -29,33 +27,81 @@ def on_event(ev):
    return deco
 
 # ----------------------------------------------------------------------------
-
-def publish(message, cid):
-   # cid = None, publish all channels
-   # cid = <int>, publish to all clients listening to this channel
-
-   red.publish('sse-%s' % cid, u'%s' % json.dumps(message))
-
+# Send a message (a dictionary) to a specific channel
 # ----------------------------------------------------------------------------
 
-def listen(cid, from_cid):
-   ''' listen to channel cid, from the client identified by channel from_cid '''
-   pass
+def notify(cid, message):
+   message.update(cid=cid)
+   r.publish('sse-%s' % cid, u'%s' % json.dumps(message))
+
+# ----------------------------------------------------------------------------
+#
+# Broadcast message to all clients listening to channel cid
+# If message_to_host exists and cid is listening to its own channel,
+#     message_to_host, not message, will be sent to cid.
+#
+# ----------------------------------------------------------------------------
+
+def broadcast(cid, to_others, to_host = None):
+   to_others.update(cid=cid)
+   if to_host is not None:
+      to_host.update(cid=cid)
+
+   # all clients that are listening to channel cid
+   clients = red.smembers('sse-listening-to-%s' % cid)
+
+   pipe = red.pipeline()
+   for c in clients:
+      if c == str(cid):
+         if to_host is not None:
+            pipe.publish('sse-%s' % cid, u'%s' % json.dumps(to_host))
+      else:
+         pipe.publish('sse-%s' % c, u'%s' % json.dumps(to_others))
+   pipe.execute()
+
+# ----------------------------------------------------------------------------
+#
+# Goal: set client to listen to channel cid.  Must update 2 data structures.
+# see-listening: hash storing the cid (value) to which a client (key) is currently listening
+# sse-listening-to-<cid>: set storing all clients listening to channel cid
+#
+# ----------------------------------------------------------------------------
+
+def listen_to(cid, client):
+   current_cid = red.hget('sse-listening', client)
+   pipe = red.pipeline()
+   if current_cid is None:
+      # add client to the set of clients listening to cid
+      pipe.sadd('sse-listening-to-%s' % cid, client)
+   else:
+      # moving client from current channel (current_cid) to new channel (cid)
+      pipe.srem('sse-listening-to-%s' % current_cid, client)
+      pipe.sadd('sse-listening-to-%s' % cid, client)
+
+   # client will listen to channel cid
+   pipe.hset('sse-listening', client, cid)
+   pipe.execute()
+
+
+
+# ----------------------------------------------------------------------------
+# CLIENT SIDE
+# ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
 #
 # Client sends messages to server via sse_send
 #
 # ----------------------------------------------------------------------------
-@sse_bp.route('/sse_send', methods=['POST'])
+@sse_bp.route('/sse_send', methods=['GET','POST'])
 def sse_send():
    ev = request.form['event']
    message = request.form['message']
 
-   # the channel that sends the message
+   # # the channel that sends the message
    cid = request.form['cid']
 
-   for f in sse_events.get(e, []):
+   for f in sse_events.get(ev, []):
       f(message, cid)
 
    return ''
@@ -70,6 +116,7 @@ def sse_receive(cid):
    def event_stream():
       pubsub = red.pubsub()
       pubsub.subscribe('sse-%s' % cid)
+      listen_to(cid, cid)
       for message in pubsub.listen():
          yield 'data: {0}\n\n'.format(message['data'])
 

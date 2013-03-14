@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block content %}
+
+<input type="hidden" id="chanid" value="{{this_user.id}}" />
+<input type="hidden" id="my_uid" value="{{this_user.id}}" />
+<input type="hidden" id="I_can_view_all" value="{{this_user.view_all_boards}}" />
+
+<div class="tabbable tabs-right">
+  <ul class="nav nav-tabs">
+    {% for u in all_users: %}
+    <li class="menu{{u.id}} {% if u.id==this_user.id: %}active{% endif %}">
+      <a href="#tab{{u.id}}" data-toggle="tab">
+        {% if this_user.id==u.id: %}me{% else: %}{{u.username}}{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="tab-content">
+    {% for u in all_users: %}
+      <div class="tab-pane {% if u.id==this_user.id: %}active{% endif %}" id="tab{{u.id}}">
+        <div>
+          {{u.username}}'s whiteboard
+          [
+          {% if this_user.id == u.id or logged_in_user.role=='teacher': %}
+            <a href="#" id="show-my-board{{u.id}}">on/off</a>
+          {% endif %}
+          ]
+        </div>
+
+        <div class="row-fluid">
+          <!-- CODE  -->
+          <div class="span8">
+            {% if u.id==this_user.id: %}
+              <textarea id="code{{u.id}}" name="code{{u.id}}" class="span12" rows="35"></textarea>
+            {% else: %}
+              <pre id="code{{u.id}}" class="codespace"></pre>
+            {% endif %}
+          </div>
+
+          <!-- CHAT -->
+          <div class="span4">
+            <input class="chat-input span12 input-tiny" type="text" placeholder="chat..." />
+            <div id="chat-output{{u.id}}" class="chatspace"></div>
+          </div>
+        </div>
+
+        <!-- RESULT -->
+        <div class="row">
+          <div class="span10">
+            <pre id="result{{u.id}}" class="resultspace"></pre>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
+
+<script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
+<script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
+
+<script type="text/javascript">
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  var editor = CodeMirror.fromTextArea(document.getElementById("code{{this_user.id}}"), {
+    mode: {name: "python", version: 2, singleLineStringErrors: false},
+    lineNumbers: true,
+    indentUnit: 3,
+    tabMode: "shift",
+    // matchBrackets: true,
+    onKeyEvent : function( ed, ev ) {
+      if (ev.keyCode == 13){
+        if ( ev.shiftKey && ev.type == 'keyup' ) {
+          $.post($SCRIPT_ROOT + '/send_message',
+            { message: editor.getValue(), type:'code', chanid:{{this_user.id}} });
+          $('#result').html('running...');
+        }
+        else {
+          $.post($SCRIPT_ROOT + '/send_message',
+            { message: editor.getValue(), type:'code_noexec', chanid:{{this_user.id}} });
+        }
+        ev.preventDefault();
+      }
+    }
+  });
+
+  $(document).ready(function(){
+    // sending chat messages
+    $('.chat-input').keyup(function(e){
+      if (e.keyCode == 13) {
+        $.post($SCRIPT_ROOT+'/send_message',{ message: $(this).val(), type:'chat', chanid:$('#chanid').val()});
+        $(this).val('');
+      }
+    });
+
+    // setting up for all users
+    {% for u in all_users: %}
+      $('#show-my-board{{u.id}}').click(function(e){
+        $.get("{{url_for('toggle_board',uid=u.id)}}");
+      });
+
+      $('.menu{{u.id}}').click(function(e){
+        $('#chanid').val({{u.id}});
+      });
+
+      {% if this_user.id != u.id %}
+        $('.menu{{u.id}}').hide();
+      {% endif %}
+    {% endfor %}
+
+    // turning on active users
+    {% for uid, user in active_users.items(): %}
+      {% if user.open_board or active_users[this_user.id].view_all_boards: %}
+        $('.menu{{uid}}').show();
+      {% endif %}
+      {% if user.open_board: %}
+        $('.menu{{uid}}').addClass('open-board');
+      {% endif %}
+    {% endfor %}
+
+    // streaming messages from server
+    var result = new EventSource('/stream');
+    result.onmessage = function (e) {
+      var this_user_id = "{{this_user.id}}";
+      var data = $.parseJSON(e.data);
+      var chanid = data.chanid;
+
+      if (data.code && this_user_id!=chanid) {
+        $('#code' + chanid).html(data.code);
+      }
+      if (data.output) {
+        $('#result' + chanid).html(data.output);
+      }
+      if (data.chat) {
+        var message = data.chat;
+        var time = data.time;
+        var from_user = data.username;
+        var from_uid = data.uid;
+        var m = '<span class="time-light">'+time+'</span> ' + '<strong>'+from_user+'</strong>: ' + message + '<br/>';
+        $('#chat-output' + chanid).append( m );
+      }
+      if (data.update) {
+        var info = data.update;
+        if (info.open_board == true){
+          $('.menu' + chanid).show();
+          $('.menu' + chanid).addClass('open-board');
+        }
+        else {
+          if (chanid != $('#my_uid').val() && $('#I_can_view_all').val() != 'True') {
+            $('.menu' + chanid).hide();
+          }
+          $('.menu' + chanid).removeClass('open-board');
+
+          /* whoever is viewing the board is returned to his own board */
+          if ( $('#chanid').val() == chanid) {
+            $('.menu' + chanid).removeClass('active');
+            $('#tab' + chanid).removeClass('active');
+            $('.menu' + $('#my_uid').val()).addClass('active');
+            $('#tab' + $('#my_uid').val()).addClass('active');
+            $('#chanid').val($('#my_uid').val());
+          }
+        }
+      }
+    }
+
+    // turning on editor for the current user
+    editor.focus();
+  });
+</script>
+
+{% endblock %}

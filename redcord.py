@@ -1,5 +1,5 @@
 '''
-Red is a redis object modeler.  A Red object has attributes of type Field.
+Redcord is a redis object modeler.  A Redcord object has attributes of type Field.
 These attributes will be saved to redis.
 These attributes are "type safe": types other than int, float, string are
 automatically cPickled.
@@ -45,9 +45,9 @@ class Field (object):
 #
 class MetaRed (type):
    def __new__(meta, name, bases, dct):
-      if bases[0].__name__ == 'Red':
+      if bases[0].__name__ == 'Redcord':
          #
-         # Note: these lists and dicts are shared by all Red instances
+         # Note: these lists and dicts are shared by all Redcord instances
          #
          dct['__fields__'] = []
          dct['__field_types__'] = {}
@@ -67,9 +67,9 @@ class MetaRed (type):
 # ----------------------------------------------------------------------------
 # A field is store in __fields__.  Its converter is stored in __field_types__
 #
-class Red (object):
+class Redcord (object):
    __metaclass__ = MetaRed
-   conn = redis.StrictRedis(host='localhost', port=6379, db=1)
+   conn = redis.StrictRedis()
    pipe = conn.pipeline()
 
    def __init__(self, _id):

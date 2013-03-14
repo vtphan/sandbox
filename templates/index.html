@@ -4,7 +4,7 @@
 <h5>Hi {{ user.username }}</h5>
 
 <ul class="nav nav-tabs nav-stacked">
-   <li><a href="">Sandbox</a></li>
+   <li><a href="{{url_for('sandbox.index')}}">Sandbox</a></li>
    {% if user.role == 'teacher': %}
       <li><a href="{{url_for('user_page.list')}}">Users</a></li>
    {% endif %}
