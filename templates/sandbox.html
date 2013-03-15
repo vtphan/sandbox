@@ -18,12 +18,12 @@
     {% for u in all_users: %}
       <div class="tab-pane {% if u.id==user_record.id: %}active{% endif %}" id="tab{{u.id}}">
         <div>
-          {{u.username}}'s whiteboard
-          [
-          {% if user_record.id == u.id or logged_in_user.role=='teacher': %}
-            <a href="#" id="show-my-board{{u.id}}">on/off</a>
+          {% if user_record.id == u.id: %}
+              <a href="#" id="show-my-board{{u.id}}">
+              {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
+              </a>
           {% endif %}
-          ]
+          {{u.username}}'s whiteboard
         </div>
 
         <div class="row-fluid">
@@ -89,7 +89,7 @@
     // setting up for all channels
     {% for u in all_users: %}
       $('#show-my-board{{u.id}}').click(function(e){
-        $.get("/toggle_board");
+        $.post("/sse_send", {message:{{u.id}}, event:'toggle-board', cid:{{u.id}} });
       });
       $('.menu{{u.id}}').hide();
       $('.menu{{u.id}}').click(function(e){
@@ -99,10 +99,8 @@
 
     // turning on active users
     {% for uid, user in all_records.items(): %}
-      console.log({{user.id}} + ' ' + {{user_record.id}});
       {% if uid==user_record.id or user.open_board or all_records[user_record.id].view_all_boards: %}
         $('.menu{{uid}}').show();
-        console.log('showing {{uid}}');
       {% endif %}
       {% if user.open_board: %}
         $('.menu{{uid}}').addClass('open-board');
@@ -118,25 +116,67 @@
     });
 
     // streaming messages from server
-    var result = new EventSource('/sse_receive/' + cid);
-    result.onmessage = function (e) {
-      var data = $.parseJSON(e.data);
+    var source = new EventSource('/sse_receive/' + cid);
+    source.addEventListener("message", function(event) {
+      var data = $.parseJSON(event.data);
+
       if (data.cid == undefined){
         return false;
       }
       var the_cid = data.cid;
 
-      if (data.code) {
+      if (data.code != undefined) {
         $('#code' + the_cid).html(data.code);
       }
-      if (data.output) {
+      if (data.output != undefined) {
         $('#result' + the_cid).html(data.output);
       }
-      if (data.chat) {
-        var m = '<span class="time-light">'+data.time+'</span> ' + '<strong>'+data.username+'</strong>: ' + data.chat + '<br/>';
+      if (data.chat != undefined) {
+        var m = '<i class="icon-hand-right"></i> <strong>'+data.username+'</strong>: ' + data.chat + '<br/>';
         $('#chat-output' + the_cid).append( m );
       }
-    }
+      if (data.just_joining != undefined){
+        $('.menu' + the_cid).show();
+        if (data.board_status == true){
+          $('.menu' + the_cid).addClass('open-board');
+        }
+      }
+      else if (data.joining != undefined) {
+        if (data.board_status == true){
+          $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
+        }
+        else {
+          $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
+        }
+      }
+      else if (data.board_status != undefined) {
+        if (data.board_status == true){
+          /* open up board to everyone */
+          $('.menu' + the_cid).addClass('open-board');
+          $('.menu' + the_cid).show();
+          if (the_cid == cid) {
+            $('#show-my-board' + the_cid).html('<i class="icon-eye-open"></i>');
+          }
+        }
+        else {
+          /* close board */
+          $('.menu' + the_cid).removeClass('open-board');
+          if (the_cid == cid) {
+            $('#show-my-board' + the_cid).html('<i class="icon-eye-close"></i>');
+          }
+          if (data.hide_board == true) {
+            $('.menu' + the_cid).hide();
+
+            if (data.back_to_homeboard == true) { /* only affect those currently listening */
+              $('.menu' + the_cid).removeClass('active');
+              $('#tab' + the_cid).removeClass('active');
+              $('.menu' + cid).addClass('active');
+              $('#tab' + cid).addClass('active');
+            }
+          }
+        }
+      }
+    }, false);
 
     // turning on editor for the current user
     editor.focus();

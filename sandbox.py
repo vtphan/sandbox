@@ -9,41 +9,49 @@ import datetime
 
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash
 import sse
-from config import app, auth, red
+from config import app, auth
 from student_record import StudentRecord
 
 sandbox_bp = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
-
-# @app.route('/toggle_board/<int:uid>')
-# @auth.login_required
-# def toggle_board(uid):
-#    user = auth.get_logged_in_user()
-#    if user.id == uid or user.role == 'teacher':
-#       s = UserRecord(uid)
-#       s.open_board = not s.open_board
-#       s.save()
-#       broadcast_status(s)
-#       return 'open' if s.open_board else 'closed'
-#    return 'illegal'
-
-# def broadcast_status(user):
-#    stream_message = { 'chanid' : user.id, 'update' : user.as_dict() }
-#    red.publish('sandbox', u'%s' % json.dumps(stream_message))
-
 # ----------------------------------------------------------------------------
 # Event listeners
+# ----------------------------------------------------------------------------
+@sse.on_event('toggle-board')
+def event_toggle_board(message, cid):
+   user = auth.get_logged_in_user()
+   if user and user.id == int(cid):
+      record = StudentRecord(user.id)
+      record.open_board = not record.open_board
+      record.save()
+
+      all_records = StudentRecord.get_all()
+
+      message_to_all = {}
+      listening_clients = sse.listening_clients(cid)
+      for c, r in all_records.items():
+         m = dict(cid=cid, board_status=record.open_board)
+         if record.open_board == False and int(cid) != int(c):
+            hide_board = not r.view_all_boards
+            if hide_board and str(c) in listening_clients:
+               m.update(back_to_homeboard=True)
+               sse.listen_to(c, c)
+            m.update(hide_board = hide_board)
+         message_to_all[int(c)] = m
+
+      sse.notify(message_to_all)
+
 # ----------------------------------------------------------------------------
 @sse.on_event('run-code')
 def event_run_code(message, cid):
    output = execute_python_code(message)
-   to_others = dict(output=output, code=message)
-   to_self = dict(output=output)
+   to_others = dict(cid=cid, output=output, code=message)
+   to_self = dict(cid=cid, output=output)
    sse.broadcast(cid, to_others, to_self)
 
 # ----------------------------------------------------------------------------
 @sse.on_event('send-code')
-def event_run_code(message, cid):
-   to_others = dict(code=message)
+def event_send_code(message, cid):
+   to_others = dict(cid=cid, code=message)
    sse.broadcast(cid, to_others, None)
 
 # ----------------------------------------------------------------------------
@@ -51,14 +59,18 @@ def event_run_code(message, cid):
 def event_chat(message, cid):
    user = auth.get_logged_in_user()
    now = datetime.datetime.now().replace(microsecond=0).time()
-   m = dict(chat=message, time=now.strftime('%I:%M'), username=user.username, uid=user.id)
-   channel = red.hget('sse-listening', cid)
+   channel = sse.current_channel(cid)
+   m = dict(cid=channel, chat=message, time=now.strftime('%I:%M'), username=user.username, uid=user.id)
    sse.broadcast(channel, m, m)
 
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
 def event_join(joining_channel, cid):
    sse.listen_to(joining_channel, cid)
+   if int(joining_channel) != int(cid):
+      user_record = StudentRecord(int(joining_channel))
+      m = dict(cid=cid, joining=True, which=user_record.id, board_status=user_record.open_board)
+      sse.notify( { cid : m } )
 
 # ----------------------------------------------------------------------------
 # sandbox view
@@ -76,6 +88,12 @@ def index():
 
    all_users = auth.User.select()
    all_records = StudentRecord.get_all()
+
+   messages = {}
+   for c, r in all_records.items():
+      if int(user_record.id) != int(c) and (r.view_all_boards or user_record.open_board):
+         messages[c] = dict(cid=user_record.id, just_joining = True, board_status=user_record.open_board)
+   sse.notify(messages)
 
    return render_template('sandbox.html',
       user_record = user_record,
