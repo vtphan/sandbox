@@ -1,11 +1,13 @@
 import json
 from config import red, app
 from flask import request, Blueprint, Response
+from collection import Collection
 
 
 sse_bp = Blueprint('sse', __name__, template_folder='templates')
 
 sse_events = {}
+channel_collection = Collection('channel', int, int)
 
 # ----------------------------------------------------------------------------
 # Decorator for server-side listeners; used by sse_send
@@ -31,10 +33,10 @@ def on_event(ev):
 # Send messages to channels.
 # Messages is a dict with keys being channels.
 # ----------------------------------------------------------------------------
-def notify(messages):
+def notify(messages, event='message'):
    pipe = red.pipeline()
    for channel, message in messages.items():
-      pipe.publish('sse-%s' % channel, u'%s' % json.dumps(message))
+      pipe.publish('sse-%s' % channel, u'%s;%s' % (event, json.dumps(message)))
    pipe.execute()
 
 # ----------------------------------------------------------------------------
@@ -45,55 +47,40 @@ def notify(messages):
 #
 # ----------------------------------------------------------------------------
 
-def broadcast(cid, to_others, to_host = None):
+def broadcast(cid, to_others, to_host = None, event='message'):
    # all clients that are listening to channel cid
    clients = listening_clients(cid)
    pipe = red.pipeline()
    for c in clients:
       if c == str(cid):
          if to_host is not None:
-            pipe.publish('sse-%s' % cid, u'%s' % json.dumps(to_host))
+            pipe.publish('sse-%s' % cid, u'%s;%s' % (event, json.dumps(to_host)))
       else:
-         pipe.publish('sse-%s' % c, u'%s' % json.dumps(to_others))
+         pipe.publish('sse-%s' % c, u'%s;%s' % (event, json.dumps(to_others)))
    pipe.execute()
 
 # ----------------------------------------------------------------------------
 #
-# Goal: set client to listen to channel cid.  Must update 2 data structures.
-# see-listening: hash storing the cid (value) to which a client (key) is currently listening
-# clients-in-channel-<cid>: set storing all clients listening to channel cid
+# Goal: set client to listen to channel cid.
 #
 # ----------------------------------------------------------------------------
 
 def listen_to(cid, client):
-   current_cid = red.hget('current-channel', client)
-   pipe = red.pipeline()
-   if current_cid is None:
-      # add client to the set of clients listening to cid
-      pipe.sadd('clients-in-channel-%s' % cid, client)
-   else:
-      # moving client from current channel (current_cid) to new channel (cid)
-      pipe.srem('clients-in-channel-%s' % current_cid, client)
-      pipe.sadd('clients-in-channel-%s' % cid, client)
-
-   # client will listen to channel cid
-   pipe.hset('current-channel', client, cid)
-   pipe.execute()
+   channel_collection.insert(cid, client)
 
 # ----------------------------------------------------------------------------
-def listening_clients(cid):
-   return red.smembers('clients-in-channel-%s' % cid)
+def listening_clients(channel):
+   return channel_collection.members(channel)
 
 # ----------------------------------------------------------------------------
 
 def current_channel(client):
-   return red.hget('current-channel', client)
+   return channel_collection.set_of(client)
 
 # ----------------------------------------------------------------------------
 
 def clear_all():
    red.flushdb()
-
 
 # ----------------------------------------------------------------------------
 # CLIENT SIDE
@@ -129,8 +116,10 @@ def sse_receive(cid):
       pubsub.subscribe('sse-%s' % cid)
       listen_to(cid, cid)
       for message in pubsub.listen():
-         # print '>>>', cid, message['data']
-         yield 'data: {0}\n\n'.format(message['data'])
+         if isinstance(message['data'], basestring):
+            event, mesg = message['data'].split(';', 1)
+            # print event, mesg
+            yield 'event: {0}\ndata: {1}\n\n'.format(event, mesg)
 
    return Response(event_stream(), mimetype="text/event-stream")
 

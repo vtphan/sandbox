@@ -32,13 +32,13 @@ def event_toggle_board(message, cid):
          m = dict(cid=cid, board_status=record.open_board)
          if record.open_board == False and int(cid) != int(c):
             hide_board = not r.view_all_boards
-            if hide_board and str(c) in listening_clients:
+            if hide_board and c in listening_clients:
                m.update(back_to_homeboard=True)
                sse.listen_to(c, c)
             m.update(hide_board = hide_board)
          message_to_all[int(c)] = m
 
-      sse.notify(message_to_all)
+      sse.notify(message_to_all, event="toggle-board")
 
 # ----------------------------------------------------------------------------
 @sse.on_event('run-code')
@@ -46,13 +46,13 @@ def event_run_code(message, cid):
    output = execute_python_code(message)
    to_others = dict(cid=cid, output=output, code=message)
    to_self = dict(cid=cid, output=output)
-   sse.broadcast(cid, to_others, to_self)
+   sse.broadcast(cid, to_others, to_self, event='run-code')
 
 # ----------------------------------------------------------------------------
 @sse.on_event('send-code')
 def event_send_code(message, cid):
    to_others = dict(cid=cid, code=message)
-   sse.broadcast(cid, to_others, None)
+   sse.broadcast(cid, to_others, None, event='send-code')
 
 # ----------------------------------------------------------------------------
 @sse.on_event('chat')
@@ -61,7 +61,7 @@ def event_chat(message, cid):
    now = datetime.datetime.now().replace(microsecond=0).time()
    channel = sse.current_channel(cid)
    m = dict(cid=channel, chat=message, time=now.strftime('%I:%M'), username=user.username, uid=user.id)
-   sse.broadcast(channel, m, m)
+   sse.broadcast(channel, m, m, event='chat')
 
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
@@ -69,8 +69,9 @@ def event_join(joining_channel, cid):
    sse.listen_to(joining_channel, cid)
    if int(joining_channel) != int(cid):
       user_record = StudentRecord(int(joining_channel))
-      m = dict(cid=cid, joining=True, which=user_record.id, board_status=user_record.open_board)
-      sse.notify( { cid : m } )
+      m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
+      # To do: send a chat message to notify all listeners that this person has joined
+      sse.notify( { cid : m } , event='join')
 
 # ----------------------------------------------------------------------------
 # sandbox view
@@ -92,8 +93,8 @@ def index():
    messages = {}
    for c, r in all_records.items():
       if int(user_record.id) != int(c) and (r.view_all_boards or user_record.open_board):
-         messages[c] = dict(cid=user_record.id, just_joining = True, board_status=user_record.open_board)
-   sse.notify(messages)
+         messages[c] = dict(cid=user_record.id, board_status=user_record.open_board)
+   sse.notify(messages, event='first-join')
 
    return render_template('sandbox.html',
       user_record = user_record,

@@ -77,7 +77,7 @@
           $.post('/sse_send', { message: editor.getValue(), event:'run-code', cid: cid });
           $('#result').html('running...');
         }
-        else {
+        else if (ev.type == 'keyup') {
           $.post('/sse_send', { message: editor.getValue(), event:'send-code', cid: cid });
         }
         ev.preventDefault();
@@ -116,63 +116,72 @@
     });
 
     // streaming messages from server
-    var source = new EventSource('/sse_receive/' + cid);
-    source.addEventListener("message", function(event) {
+    var es = new EventSource('/sse_receive/' + cid);
+
+    es.addEventListener("run-code", function(event) {
+      var data = $.parseJSON(event.data);
+      if (data.code != undefined) {
+        $('#code' + data.cid).html(data.code);
+      }
+      $('#result' + data.cid).html(data.output);
+    }, false);
+
+    es.addEventListener("send-code", function(event) {
+      var data = $.parseJSON(event.data);
+      $('#code' + data.cid).html(data.code);
+    }, false);
+
+    es.addEventListener("chat", function(event) {
+      var data = $.parseJSON(event.data);
+      var m = '<i class="icon-hand-right"></i> <strong>'+data.username+'</strong>: ' + data.chat + '<br/>';
+      $('#chat-output' + data.cid).append( m );
+    }, false);
+
+    es.addEventListener("first-join", function(event) {
+      var data = $.parseJSON(event.data);
+      $('.menu' + data.cid).show();
+      if (data.board_status == true){
+        $('.menu' + data.cid).addClass('open-board');
+      }
+    }, false);
+
+    es.addEventListener("join", function(event) {
       var data = $.parseJSON(event.data);
 
-      if (data.cid == undefined){
-        return false;
+      if (data.board_status == true){
+        $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
       }
+      else {
+        $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
+      }
+    }, false);
+
+    es.addEventListener("toggle-board", function(event) {
+      var data = $.parseJSON(event.data);
       var the_cid = data.cid;
 
-      if (data.code != undefined) {
-        $('#code' + the_cid).html(data.code);
-      }
-      if (data.output != undefined) {
-        $('#result' + the_cid).html(data.output);
-      }
-      if (data.chat != undefined) {
-        var m = '<i class="icon-hand-right"></i> <strong>'+data.username+'</strong>: ' + data.chat + '<br/>';
-        $('#chat-output' + the_cid).append( m );
-      }
-      if (data.just_joining != undefined){
+      if (data.board_status == true){
+        /* open up board to everyone */
+        $('.menu' + the_cid).addClass('open-board');
         $('.menu' + the_cid).show();
-        if (data.board_status == true){
-          $('.menu' + the_cid).addClass('open-board');
+        if (the_cid == cid) {
+          $('#show-my-board' + the_cid).html('<i class="icon-eye-open"></i>');
         }
       }
-      else if (data.joining != undefined) {
-        if (data.board_status == true){
-          $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
+      else {
+        /* close board */
+        $('.menu' + the_cid).removeClass('open-board');
+        if (the_cid == cid) {
+          $('#show-my-board' + the_cid).html('<i class="icon-eye-close"></i>');
         }
-        else {
-          $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
-        }
-      }
-      else if (data.board_status != undefined) {
-        if (data.board_status == true){
-          /* open up board to everyone */
-          $('.menu' + the_cid).addClass('open-board');
-          $('.menu' + the_cid).show();
-          if (the_cid == cid) {
-            $('#show-my-board' + the_cid).html('<i class="icon-eye-open"></i>');
-          }
-        }
-        else {
-          /* close board */
-          $('.menu' + the_cid).removeClass('open-board');
-          if (the_cid == cid) {
-            $('#show-my-board' + the_cid).html('<i class="icon-eye-close"></i>');
-          }
-          if (data.hide_board == true) {
-            $('.menu' + the_cid).hide();
+        if (data.hide_board == true) {
+          $('.menu' + the_cid).hide();
 
-            if (data.back_to_homeboard == true) { /* only affect those currently listening */
-              $('.menu' + the_cid).removeClass('active');
-              $('#tab' + the_cid).removeClass('active');
-              $('.menu' + cid).addClass('active');
-              $('#tab' + cid).addClass('active');
-            }
+          if (data.back_to_homeboard == true) { /* only affect those currently listening */
+            $('.menu' + the_cid).removeClass('active');
+            $('#tab' + the_cid).removeClass('active');
+            $('.menu' + cid).addClass('active');
+            $('#tab' + cid).addClass('active');
           }
         }
       }

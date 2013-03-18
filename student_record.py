@@ -15,9 +15,11 @@ class StudentRecord ( Redcord ):
       things = super(StudentRecord, cls).get_all()
       return { int(k) : v for k,v in things.items() }
 
+
 if __name__ == '__main__':
-   for k,v in StudentRecord.get_all().items():
-      print k,type(k), v.id, type(v.id)
-   x = StudentRecord(3)
-   print x.id, type(x.id), x
+   # for k,v in StudentRecord.get_all().items():
+   #    print k,type(k), v.id, type(v.id)
+   # x = StudentRecord(3)
+   # print x.id, type(x.id), x
+
    pass
