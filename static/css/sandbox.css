@@ -18,3 +18,27 @@ body {
    font-weight: bold;
    /*color: red !important;*/
 }
+
+
+.problem {
+   padding: 0em;
+   margin: 0em;
+}
+.problem-point {
+   font-size: 110%;
+   float: right;
+   padding: 0.5em;
+   margin: 0;
+}
+.problem-number {
+   padding: 0.5em;
+   margin: 0;
+   float: left;
+   color: #aaa;
+}
+.problem-description {
+   padding: 2em;
+   margin:0em;
+   font-size: 105%;
+   border: 1px solid #ddd;
+}
