@@ -5,6 +5,7 @@
 
 <ul class="nav nav-tabs nav-stacked">
    <li><a href="{{url_for('sandbox.index')}}">Sandbox</a></li>
+   <li><a href="{{url_for('problem_set.list')}}">Problem sets</a></li>
    {% if user.role == 'teacher': %}
       <li><a href="{{url_for('user_page.list')}}">Users</a></li>
    {% endif %}

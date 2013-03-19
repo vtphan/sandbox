@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Problem id: {{ prob.id }}</h1>
+
+<a href="{{url_for('problem_set.edit', pid=prob.problem_set.id)}}">Referenced problem set</a>.
+
+<form method="post" action="">
+   Viewable:
+   <input type="checkbox" name="viewable" id="viewable" {% if prob.viewable: %}checked="checked"{% endif %} /><br />
+   <label>Points</label>
+   <input type="number" name="points" id="points" class="span1" value="{{prob.points}}" /><br/>
+   <label>Description</label>
+   <textarea name="description" id="description" class="span8" rows="10">{{prob.description}}</textarea><br />
+   Delete: <input type="checkbox" name="delete" /><br/><br/>
+
+   <button type="submit" class="btn"/>Update</button>
+</form>
+
+
+{% endblock %}

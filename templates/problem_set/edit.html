@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1><a href="{{url_for('problem_set.index', pid=ps.id)}}">Problem set {{ ps.id }}</a></h1>
+Created on {{ ps.created }}
+
+{% for p in problems: %}
+   <p class="problem">
+      <div class="problem-number">
+         <a href="{{url_for('problem_set.edit_problem', pid=p.id)}}">#{{loop.index}}</a>
+      </div>
+      <div class="problem-point text-success">
+         {% if not p.viewable: %}<i class="icon-minus-sign"></i>{% endif %}
+         {{p.points}} points
+      </div>
+      <div class="problem-description">{{p.description}}</div>
+   </p>
+{% endfor %}
+
+<h3>Adding a new problem to this set</h3>
+<form method="post" action="" id="new-problem-form">
+   <label>Points</label> <input type="number" name="points" id="points" class="span1 required" /><br/>
+   <label>Description</label>
+   <textarea name="description" id="description" class="span8 required" rows="10"></textarea><br />
+   <input type="hidden" name="problemset" id="problemset" value="{{ps.id}}" />
+   <button type="submit" class="btn"/>Add problem</button>
+</form>
+
+<script>
+$(document).ready(function(){
+   $("#new-problem-form").validate();
+});
+</script>
+
+{% endblock %}

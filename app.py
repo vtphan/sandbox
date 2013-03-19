@@ -3,6 +3,7 @@ from flask import render_template, redirect, url_for
 from user import user_page
 from sse import sse_bp, clear_all
 from sandbox import sandbox_bp
+from problem_set import problem_set_page
 
 # ----------------------------------------------------------------------------
 @app.route('/')
@@ -19,6 +20,7 @@ def clear_redis():
 
 # ----------------------------------------------------------------------------
 app.register_blueprint(user_page)
+app.register_blueprint(problem_set_page)
 app.register_blueprint(sse_bp)
 app.register_blueprint(sandbox_bp)
 

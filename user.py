@@ -38,7 +38,7 @@ def list():
       user.save()
       flash('user %d created' % user.id)
       return redirect(url_for('user_page.list'))
-   return render_template('list.html', users=auth.User.select())
+   return render_template('user/list.html', users=auth.User.select())
 
 # ----------------------------------------------------------------------------
 @user_page.route('/edit', methods=['GET','POST'])
@@ -70,6 +70,6 @@ def edit(uid=None):
          if redirect_to_index:
             return redirect(url_for('index'))
          return redirect(url_for('user_page.list'))
-   return render_template('edit.html', cur_user=cur_user, user=user)
+   return render_template('user/edit.html', cur_user=cur_user, user=user)
 
 # ----------------------------------------------------------------------------
