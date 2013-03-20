@@ -78,7 +78,12 @@ def edit(pid):
             pipe.execute()
 
             all_records = StudentRecord.get_all()
-            messages = { int(c) : dict(cid=c,pids=pids) for c in all_records }
+            messages = {}
+            for k, v in all_records.items():
+               current_channel = sse.current_channel(k)
+               if not p in v.scores:
+                  v.scores[p] = 0
+               messages[k] = dict(cid = current_channel, pids = pids)
             sse.notify(messages, event="published-problem-set")
             flash('Problem set published.')
 
@@ -120,16 +125,34 @@ def edit_problem(pid):
 # ----------------------------------------------------------------------------
 
 @problem_set_page.route('/view_problem/<int:pid>')
+@problem_set_page.route('/view_problem/<int:pid>/<int:uid>', methods=['GET','POST'])
 @auth.login_required
-def view_problem(pid):
+def view_problem(pid, uid=None):
    try:
       prob = Problem.get(Problem.id == pid)
    except Problem.DoesNotExist:
       flash('Problem %s does not exist' % pid)
       return redirect(url_for('index.html'))
+
    user = auth.get_logged_in_user()
+
    if user.role != 'teacher' and prob.viewable == False:
       return 'This problem is not ready yet.'
 
-   return render_template('problem_set/view_problem.html', prob=prob)
+   score = None
+   if uid is not None:
+      user_record = StudentRecord(int(uid))
+      score = user_record.scores.get(pid, None)
+
+   view_score = score is not None and (uid==user.id or user.role=='teacher')
+   gradable = (user.role == 'teacher') and (uid is not None)
+
+   if request.method == 'POST':
+      user_record.scores[pid] = int(request.form['score'])
+      user_record.save()
+      return redirect(url_for('problem_set.view_problem', pid=pid, uid=uid))
+
+   return render_template('problem_set/view_problem.html', prob=prob,
+      score=score, view_score=view_score, gradable=gradable, uid=uid)
+
 # ----------------------------------------------------------------------------

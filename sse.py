@@ -74,6 +74,8 @@ def listening_clients(channel):
 
 # ----------------------------------------------------------------------------
 
+# todo:  look up current channel for many clients at the same time
+#
 def current_channel(client):
    return channel_collection.set_of(client)
 

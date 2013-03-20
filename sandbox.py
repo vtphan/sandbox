@@ -66,12 +66,15 @@ def event_chat(message, cid):
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
 def event_join(joining_channel, cid):
+   logged_in_user = auth.get_logged_in_user()
    sse.listen_to(joining_channel, cid)
-   if int(joining_channel) != int(cid):
-      user_record = StudentRecord(int(joining_channel))
-      m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
-      # To do: send a chat message to notify all listeners that this person has joined
-      sse.notify( { cid : m } , event='join')
+   user_record = StudentRecord(int(joining_channel))
+   pids = red.smembers('published-problem-set')
+   pids = sorted(int(p) for p in pids)
+   m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
+   if logged_in_user.role=='teacher' or cid==joining_channel:
+      m.update(pids=pids, join_cid=joining_channel)
+   sse.notify( { cid : m } , event='join')
 
 # ----------------------------------------------------------------------------
 # sandbox view

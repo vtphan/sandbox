@@ -3,6 +3,7 @@
 
 <input type="hidden" id="cid" value="{{user_record.id}}" />
 <input type="hidden" id="I_can_view_all" value="{{user_record.view_all_boards}}" />
+<input type="hidden" id="is_teacher" value="{{logged_in_user.role == 'teacher'}}" />
 
 <div class="tabbable tabs-right">
   <ul class="nav nav-tabs">
@@ -25,10 +26,12 @@
           {% endif %}
           {{u.username}}'s whiteboard
           &nbsp; &nbsp;
-          <span id="problem-set{{u.id}}">
-            {% for p in problem_ids: %}
-              <a href="{{url_for('problem_set.view_problem', pid = p)}}" target="_blank">#{{p}}</a>
-            {% endfor %}
+          <span id="problem-set{{u.id}}" class="problem-set">
+            {% if logged_in_user.role == 'teacher' or u.id==user_record.id: %}
+              {% for p in problem_ids: %}
+                <a href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}" target="_blank">#{{p}}</a>
+              {% endfor %}
+            {% endif %}
           </span>
         </div>
 
@@ -125,14 +128,37 @@
 
     es.addEventListener("published-problem-set", function(event) {
       var data = $.parseJSON(event.data);
-      console.log(data);
-      var pids = data.pids;
       var output = '';
-      for (var i = 0; i < pids.length; i++) {
-        var url = '/problem_set/view_problem/' + pids[i];
-        output += '<a href="' + url + '" target="_blank">#' + pids[i] + '</a> ';
+      var url;
+      for (var i = 0; i < data.pids.length; i++) {
+        /* this check is done on the client side, since it's expensive to do on the server side */
+        if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
+          url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.cid;
+          output += '<a href="' + url + '" target="_blank">#' + data.pids[i] + '</a> ';
+        }
       }
       $('#problem-set' + data.cid).html(output);
+    }, false);
+
+    es.addEventListener("join", function(event) {
+      var data = $.parseJSON(event.data);
+
+      if (data.board_status == true){
+        $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
+      }
+      else {
+        $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
+      }
+
+      if (data.pids != undefined){
+        var output = '';
+        var url;
+        for (var i = 0; i < data.pids.length; i++) {
+          url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.join_cid;
+          output += '<a href="' + url + '" target="_blank">#' + data.pids[i] + '</a> ';
+        }
+        $('#problem-set' + data.join_cid).html(output);
+      }
     }, false);
 
     es.addEventListener("run-code", function(event) {
@@ -159,17 +185,6 @@
       $('.menu' + data.cid).show();
       if (data.board_status == true){
         $('.menu' + data.cid).addClass('open-board');
-      }
-    }, false);
-
-    es.addEventListener("join", function(event) {
-      var data = $.parseJSON(event.data);
-
-      if (data.board_status == true){
-        $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
-      }
-      else {
-        $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
       }
     }, false);
 

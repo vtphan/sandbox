@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form method="post" action="" id="grade-form">
+<table>
+   <thead><th>Problem id</th><th>Points</th></thead>
+   {% for p in problem_ids: %}
+   <tr>
+      <td>
+      <a href="{{url_for('problem_set.view_problem', pid=p)}}" target="_blank">#{{p}}</a>:
+      </td>
+
+      <td>
+      <input type="number" {% if p in user.scores: %}value="{{user.scores[p]}}"{% endif %}  name="p{{p}}" id="p{{p}}" class="required" />
+      </td>
+   </tr>
+   {% endfor %}
+</table>
+<button type="submit" class="btn"/>Save</button>
+</form>
+
+<script>
+$(document).ready(function(){
+   $("#grade-form").validate();
+});
+</script>
+{% endblock %}
