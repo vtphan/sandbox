@@ -134,7 +134,7 @@
         /* this check is done on the client side, since it's expensive to do on the server side */
         if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
           url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.cid;
-          output += '<a href="' + url + '" target="_blank">#' + data.pids[i] + '</a> ';
+          output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
         }
       }
       $('#problem-set' + data.cid).html(output);
@@ -155,7 +155,7 @@
         var url;
         for (var i = 0; i < data.pids.length; i++) {
           url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.join_cid;
-          output += '<a href="' + url + '" target="_blank">#' + data.pids[i] + '</a> ';
+          output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
         }
         $('#problem-set' + data.join_cid).html(output);
       }
