@@ -73,8 +73,7 @@ def event_join(joining_channel, cid):
    pids = sorted(int(p) for p in pids)
    m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
    if logged_in_user.role=='teacher' or cid==joining_channel:
-      score = sum(user_record.scores.values())
-      m.update(pids=pids, join_cid=joining_channel, score=score)
+      m.update(pids=pids, join_cid=joining_channel)
    sse.notify( { cid : m } , event='join')
 
 # ----------------------------------------------------------------------------

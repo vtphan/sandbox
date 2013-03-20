@@ -3,7 +3,7 @@ from redcord import Redcord, Field
 
 class StudentRecord ( Redcord ):
    scores = Field(dict, {})
-   brownie = Field(int, 0)
+   brownies = Field(int, 0)
    view_all_boards = Field(bool, False)
    open_board = Field(bool, False)
 

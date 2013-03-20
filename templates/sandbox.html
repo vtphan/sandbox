@@ -33,8 +33,10 @@
               {% endfor %}
             {% endif %}
           </span>
-          <span id="score{{u.id}}" class="text-success">
-            ({{sum(user_record.scores.values())}} points)
+          <span id="score{{u.id}}">
+            {% if user_record.id == u.id: %}
+              <div class="badge badge-success">{{sum(user_record.scores.values())}}</div><div class="badge badge-important"> {{user_record.brownies}}</div>
+            {% endif %}
           </span>
         </div>
 
@@ -129,6 +131,14 @@
     // CLIENT SIDE EVENT LISTENERS
     var es = new EventSource('/sse_receive/' + cid);
 
+    es.addEventListener("update-score", function(event) {
+      var data = $.parseJSON(event.data);
+      var output = '<div class="badge badge-success">'+data.total_score+'</div>';
+      output += '<div class="badge badge-important">'+data.brownies+'</div>'
+
+      $('#score' + data.cid).html(output);
+    }, false);
+
     es.addEventListener("published-problem-set", function(event) {
       var data = $.parseJSON(event.data);
       var output = '';
@@ -142,8 +152,6 @@
       }
       if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
         $('#problem-set' + data.cid).html(output);
-        $('#score' + data.cid).html('(' + data.score + ' points)');
-        console.log('p: ' + data.cid + ' ' + data.score);
       }
     }, false);
 
@@ -165,8 +173,6 @@
           output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
         }
         $('#problem-set' + data.join_cid).html(output);
-        $('#score' + data.join_cid).html('(' + data.score + ' points)');
-        console.log('j: ' + data.join_cid + ' ' + data.score);
       }
     }, false);
 

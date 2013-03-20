@@ -80,9 +80,7 @@ def edit(pid):
             all_records = StudentRecord.get_all()
             messages = {}
             for k, v in all_records.items():
-               current_channel = sse.current_channel(k)
-               score = sum(all_records[current_channel].scores.values())
-               messages[k] = dict(cid = current_channel, pids = pids, score=score)
+               messages[k] = dict(cid = sse.current_channel(k), pids = pids)
             sse.notify(messages, event="published-problem-set")
             flash('Problem set published.')
 
@@ -134,24 +132,38 @@ def view_problem(pid, uid=None):
       return redirect(url_for('index.html'))
 
    user = auth.get_logged_in_user()
-
    if user.role != 'teacher' and prob.viewable == False:
       return 'This problem is not ready yet.'
 
    score = None
+   graded_user = None
    if uid is not None:
       user_record = StudentRecord(int(uid))
       score = user_record.scores.get(pid, None)
+      try:
+         graded_user = auth.User.get(auth.User.id == uid)
+      except auth.User.DoesNotExist:
+         flash('non-existant user')
+         return redirect(url_for('index'))
 
    view_score = score is not None and (uid==user.id or user.role=='teacher')
    gradable = (user.role == 'teacher') and (uid is not None)
 
-   if request.method == 'POST':
+   if gradable and request.method == 'POST':
       user_record.scores[pid] = int(request.form['score'])
       user_record.save()
+      cids = sse.listening_clients(user_record.id)
+      message = {}
+      m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()),
+         brownies=user_record.brownies)
+      # update only to the user and the teacher who is revising the grade
+      message[user_record.id] = m
+      message[user.id] = m
+      sse.notify(message, event="update-score")
+      flash('Score updated for %s' % graded_user.username)
       return redirect(url_for('problem_set.view_problem', pid=pid, uid=uid))
 
    return render_template('problem_set/view_problem.html', prob=prob,
-      score=score, view_score=view_score, gradable=gradable, uid=uid)
+      score=score, view_score=view_score, gradable=gradable, graded_user=graded_user)
 
 # ----------------------------------------------------------------------------

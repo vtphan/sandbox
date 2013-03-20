@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-
+<br/><br/><br/>
 <p class="problem">
    <div class="problem-point text-success">
       {% if view_score: %}{{score}} out of{% endif %}
@@ -9,8 +9,9 @@
    <div class="problem-description">{{prob.description}}</div>
 </p>
 {% if gradable: %}
-<h5>Points on this problem for user
-   #<a href="{{url_for('user_page.edit', uid=uid)}}" target="_blank">{{uid}}</a></h5>
+<h5>Points on this problem for <a href="{{url_for('user_page.edit', uid=graded_user.id)}}" target="_blank">
+   {{graded_user.username}}</a>
+</h5>
    <form class="form-inline" method="post" action="" id="grade-form">
       <input type="number" name="score" id="score" class="required" />
       <button type="submit" class="btn"/>Save</button>
