@@ -16,14 +16,20 @@ Created on {{ ps.created }}
       <div class="problem-description">{{p.description}}</div>
    </p>
 {% endfor %}
+<br />
+<form method="post" action="" id="publish" name="publish">
+   <input type="hidden" name="publish" value="publish" />
+   <button type="submit" class="btn" value="publish" />Publish</button>
+</form
 
+<br /><br />
 <h3>Adding a new problem to this set</h3>
-<form method="post" action="" id="new-problem-form">
+<form method="post" action="" id="new-problem-form" name="new-problem-form">
    <label>Points</label> <input type="number" name="points" id="points" class="span1 required" /><br/>
    <label>Description</label>
    <textarea name="description" id="description" class="span8 required" rows="10"></textarea><br />
    <input type="hidden" name="problemset" id="problemset" value="{{ps.id}}" />
-   <button type="submit" class="btn"/>Add problem</button>
+   <button type="submit" class="btn" value="add-new-problem" />Add problem</button>
 </form>
 
 <script>

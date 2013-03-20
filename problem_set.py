@@ -1,9 +1,12 @@
 import datetime
-from config import db, auth
+from config import db, auth, red
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash
 from peewee import *
+import sse
+from student_record import StudentRecord
 
 problem_set_page = Blueprint('problem_set', __name__, url_prefix='/problem_set')
+drop_tables = False
 
 # ----------------------------------------------------------------------------
 class ProblemSet (db.Model):
@@ -20,11 +23,12 @@ class Problem (db.Model):
 
 @problem_set_page.before_app_first_request
 def init():
-   # ProblemSet.drop_table(fail_silently=True)
-   # Problem.drop_table(fail_silently=True)
-   ProblemSet.create_table(fail_silently=True)
-   Problem.create_table(fail_silently=True)
-
+   if drop_tables:
+      ProblemSet.drop_table(fail_silently=True)
+      Problem.drop_table(fail_silently=True)
+   else:
+      ProblemSet.create_table(fail_silently=True)
+      Problem.create_table(fail_silently=True)
 
 # ----------------------------------------------------------------------------
 @problem_set_page.route('/list', methods=['GET','POST'])
@@ -32,9 +36,9 @@ def list():
    if request.method == 'POST':
       ps = ProblemSet.create()
       return redirect( url_for('problem_set.edit', pid=ps.id) )
-
    creatable = auth.get_logged_in_user().role == 'teacher'
-   return render_template('problem_set/list.html', ps = ProblemSet.select().order_by(ProblemSet.id) )
+   return render_template('problem_set/list.html', creatable=creatable,
+      ps = ProblemSet.select().order_by(ProblemSet.id) )
 
 # ----------------------------------------------------------------------------
 @problem_set_page.route('/<int:pid>')
@@ -65,12 +69,26 @@ def edit(pid):
    problems = Problem.select().annotate(ProblemSet).where(ProblemSet.id == pid).order_by(Problem.id.asc())
 
    if request.method == 'POST':
-      problem = Problem()
-      problem.points = request.form['points']
-      problem.description = request.form['description']
-      problem.problem_set = request.form['problemset']
-      problem.save()
-      return redirect( url_for('problem_set.edit', pid=ps.id) )
+      if 'publish' in request.form:
+         pids = [p.id for p in problems if p.viewable]
+         if pids:
+            pipe = red.pipeline()
+            pipe.delete('published-problem-set')
+            pipe.sadd('published-problem-set', *pids)
+            pipe.execute()
+
+            all_records = StudentRecord.get_all()
+            messages = { int(c) : dict(cid=c,pids=pids) for c in all_records }
+            sse.notify(messages, event="published-problem-set")
+            flash('Problem set published.')
+
+      else:
+         problem = Problem()
+         problem.points = request.form['points']
+         problem.description = request.form['description']
+         problem.problem_set = request.form['problemset']
+         problem.save()
+         return redirect( url_for('problem_set.edit', pid=ps.id) )
 
    return render_template('problem_set/edit.html', ps=ps, problems=problems)
 
@@ -96,7 +114,6 @@ def edit_problem(pid):
          prob.description = request.form['description']
          prob.viewable = 'viewable' in request.form
          prob.save()
-         print 'here'
          return redirect(url_for('problem_set.edit', pid=psid))
 
    return render_template('problem_set/edit_problem.html', prob=prob)

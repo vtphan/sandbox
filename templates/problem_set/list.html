@@ -3,7 +3,7 @@
 <h3>Existing problem sets</h3>
 <ul>
 {% for p in ps: %}
-   <li><a href="{{url_for('problem_set.index', pid=p.id)}}">ps #{{p.id}}</a></li>
+   <li><a href="{{url_for('problem_set.index', pid=p.id)}}">Problem set #{{p.id}}</a>, {{p.created.strftime('%m-%d-%Y')}}</li>
 {% endfor %}
 </ul>
 

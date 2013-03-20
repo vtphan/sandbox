@@ -1,7 +1,7 @@
 from config import app, auth, red
 from flask import render_template, redirect, url_for
 from user import user_page
-from sse import sse_bp, clear_all
+from sse import sse_bp
 from sandbox import sandbox_bp
 from problem_set import problem_set_page
 
@@ -16,7 +16,7 @@ def index():
 # ----------------------------------------------------------------------------
 @app.before_first_request
 def clear_redis():
-	clear_all()
+   red.flushdb()
 
 # ----------------------------------------------------------------------------
 app.register_blueprint(user_page)

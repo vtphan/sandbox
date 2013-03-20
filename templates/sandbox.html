@@ -24,6 +24,12 @@
               </a>
           {% endif %}
           {{u.username}}'s whiteboard
+          &nbsp; &nbsp;
+          <span id="problem-set{{u.id}}">
+            {% for p in problem_ids: %}
+              <a href="{{url_for('problem_set.view_problem', pid = p)}}" target="_blank">#{{p}}</a>
+            {% endfor %}
+          </span>
         </div>
 
         <div class="row-fluid">
@@ -53,7 +59,6 @@
     {% endfor %}
   </div>
 </div>
-
 
 
 
@@ -117,6 +122,18 @@
 
     // streaming messages from server
     var es = new EventSource('/sse_receive/' + cid);
+
+    es.addEventListener("published-problem-set", function(event) {
+      var data = $.parseJSON(event.data);
+      console.log(data);
+      var pids = data.pids;
+      var output = '';
+      for (var i = 0; i < pids.length; i++) {
+        var url = '/problem_set/view_problem/' + pids[i];
+        output += '<a href="' + url + '" target="_blank">#' + pids[i] + '</a> ';
+      }
+      $('#problem-set' + data.cid).html(output);
+    }, false);
 
     es.addEventListener("run-code", function(event) {
       var data = $.parseJSON(event.data);

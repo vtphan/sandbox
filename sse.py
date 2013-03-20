@@ -77,10 +77,6 @@ def listening_clients(channel):
 def current_channel(client):
    return channel_collection.set_of(client)
 
-# ----------------------------------------------------------------------------
-
-def clear_all():
-   red.flushdb()
 
 # ----------------------------------------------------------------------------
 # CLIENT SIDE

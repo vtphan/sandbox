@@ -2,7 +2,7 @@
 from redcord import Redcord, Field
 
 class StudentRecord ( Redcord ):
-   score = Field(int, 0)
+   scores = Field(dict, {})
    brownie = Field(int, 0)
    view_all_boards = Field(bool, False)
    open_board = Field(bool, False)
@@ -17,9 +17,9 @@ class StudentRecord ( Redcord ):
 
 
 if __name__ == '__main__':
-   # for k,v in StudentRecord.get_all().items():
-   #    print k,type(k), v.id, type(v.id)
-   # x = StudentRecord(3)
-   # print x.id, type(x.id), x
-
+   for k,v in StudentRecord.get_all().items():
+      print k, v
+   # a = StudentRecord(3)
+   # a.scores[3] = 30
+   # a.save()
    pass

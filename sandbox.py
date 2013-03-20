@@ -9,7 +9,7 @@ import datetime
 
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash
 import sse
-from config import app, auth
+from config import app, auth, red
 from student_record import StudentRecord
 
 sandbox_bp = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
@@ -96,7 +96,9 @@ def index():
          messages[c] = dict(cid=user_record.id, board_status=user_record.open_board)
    sse.notify(messages, event='first-join')
 
-   return render_template('sandbox.html',
+   problem_ids = red.smembers('published-problem-set')
+
+   return render_template('sandbox.html', problem_ids=problem_ids,
       user_record = user_record,
       all_records = all_records,
       logged_in_user = logged_in_user,
