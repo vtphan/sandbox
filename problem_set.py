@@ -81,9 +81,8 @@ def edit(pid):
             messages = {}
             for k, v in all_records.items():
                current_channel = sse.current_channel(k)
-               if not p in v.scores:
-                  v.scores[p] = 0
-               messages[k] = dict(cid = current_channel, pids = pids)
+               score = sum(all_records[current_channel].scores.values())
+               messages[k] = dict(cid = current_channel, pids = pids, score=score)
             sse.notify(messages, event="published-problem-set")
             flash('Problem set published.')
 

@@ -18,7 +18,7 @@
   <div class="tab-content">
     {% for u in all_users: %}
       <div class="tab-pane {% if u.id==user_record.id: %}active{% endif %}" id="tab{{u.id}}">
-        <div>
+        <div class="span8">
           {% if user_record.id == u.id: %}
               <a href="#" id="show-my-board{{u.id}}">
               {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
@@ -26,12 +26,15 @@
           {% endif %}
           {{u.username}}'s whiteboard
           &nbsp; &nbsp;
-          <span id="problem-set{{u.id}}" class="problem-set">
+          <span id="problem-set{{u.id}}">
             {% if logged_in_user.role == 'teacher' or u.id==user_record.id: %}
               {% for p in problem_ids: %}
-                <a href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}" target="_blank">#{{p}}</a>
+                <a href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}" target="_blank">p{{p}}</a>
               {% endfor %}
             {% endif %}
+          </span>
+          <span id="score{{u.id}}" class="text-success">
+            ({{sum(user_record.scores.values())}} points)
           </span>
         </div>
 
@@ -123,7 +126,7 @@
       }
     });
 
-    // streaming messages from server
+    // CLIENT SIDE EVENT LISTENERS
     var es = new EventSource('/sse_receive/' + cid);
 
     es.addEventListener("published-problem-set", function(event) {
@@ -137,7 +140,11 @@
           output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
         }
       }
-      $('#problem-set' + data.cid).html(output);
+      if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
+        $('#problem-set' + data.cid).html(output);
+        $('#score' + data.cid).html('(' + data.score + ' points)');
+        console.log('p: ' + data.cid + ' ' + data.score);
+      }
     }, false);
 
     es.addEventListener("join", function(event) {
@@ -158,6 +165,8 @@
           output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
         }
         $('#problem-set' + data.join_cid).html(output);
+        $('#score' + data.join_cid).html('(' + data.score + ' points)');
+        console.log('j: ' + data.join_cid + ' ' + data.score);
       }
     }, false);
 

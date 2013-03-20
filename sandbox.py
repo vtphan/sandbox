@@ -73,7 +73,8 @@ def event_join(joining_channel, cid):
    pids = sorted(int(p) for p in pids)
    m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
    if logged_in_user.role=='teacher' or cid==joining_channel:
-      m.update(pids=pids, join_cid=joining_channel)
+      score = sum(user_record.scores.values())
+      m.update(pids=pids, join_cid=joining_channel, score=score)
    sse.notify( { cid : m } , event='join')
 
 # ----------------------------------------------------------------------------
@@ -101,7 +102,7 @@ def index():
 
    problem_ids = red.smembers('published-problem-set')
 
-   return render_template('sandbox.html', problem_ids=problem_ids,
+   return render_template('sandbox.html', problem_ids=problem_ids, sum=sum,
       user_record = user_record,
       all_records = all_records,
       logged_in_user = logged_in_user,
