@@ -147,7 +147,7 @@ def view_problem(pid, uid=None):
          return redirect(url_for('index'))
 
    view_score = score is not None and (uid==user.id or user.role=='teacher')
-   gradable = (user.role == 'teacher') and (uid is not None)
+   gradable = (user.role == 'teacher') and (uid is not None) and (user.id != uid)
 
    if gradable and request.method == 'POST':
       user_record.scores[pid] = int(request.form['score'])

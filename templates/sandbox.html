@@ -33,9 +33,10 @@
               {% endfor %}
             {% endif %}
           </span>
+          &nbsp; &nbsp;
           <span id="score{{u.id}}">
             {% if user_record.id == u.id: %}
-              <div class="badge badge-success">{{sum(user_record.scores.values())}}</div><div class="badge badge-important"> {{user_record.brownies}}</div>
+              <div class="badge badge-success">{{sum(user_record.scores.values())}}</div><div class="badge badge-important">{{user_record.brownies}}</div>
             {% endif %}
           </span>
         </div>

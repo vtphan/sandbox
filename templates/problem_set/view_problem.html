@@ -9,20 +9,19 @@
    <div class="problem-description">{{prob.description}}</div>
 </p>
 {% if gradable: %}
-<h5>Points on this problem for <a href="{{url_for('user_page.edit', uid=graded_user.id)}}" target="_blank">
-   {{graded_user.username}}</a>
-</h5>
+   <h5>Points on this problem for <a href="{{url_for('user_page.edit', uid=graded_user.id)}}" target="_blank">
+      {{graded_user.username}}</a>
+   </h5>
    <form class="form-inline" method="post" action="" id="grade-form">
       <input type="number" name="score" id="score" class="required" />
       <button type="submit" class="btn"/>Save</button>
    </form>
 
-<script>
-$(document).ready(function(){
-   $("#grade-form").validate();
-});
-</script>
-
+   <script>
+   $(document).ready(function(){
+      $("#grade-form").validate();
+   });
+   </script>
 {% endif %}
 
 {% endblock %}
