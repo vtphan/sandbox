@@ -104,7 +104,7 @@ class Redcord (object):
       return { a:getattr(self,a) for a in self.__fields__ }
 
    @classmethod
-   def remove(cls, key):
+   def delete(cls, key):
       return cls.conn.execute_command('del', cls.__key_prefix__ + str(key))
 
    @classmethod

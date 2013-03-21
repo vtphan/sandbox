@@ -14,9 +14,9 @@ def index():
 	return render_template('index.html', user=user)
 
 # ----------------------------------------------------------------------------
-@app.before_first_request
-def clear_redis():
-   red.flushdb()
+# @app.before_first_request
+# def clear_redis():
+#    red.flushdb()
 
 # ----------------------------------------------------------------------------
 app.register_blueprint(user_page)

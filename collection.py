@@ -1,7 +1,8 @@
 '''
-Maintain a collection of items partitioned into many sets.
-   insert - insert item(s) into a set.
-   remove - remove an item from a set.
+Two data structures:
+
+rset-<prefix>- is a redis hash.  rset-<prefix>- [i] tells which channel item i is currently in.
+rset-<prefix>-j is a redis set.  rset-<prefix>-j tells which items are currently listening to channel j.
 '''
 import redis
 
@@ -18,6 +19,7 @@ class Collection (object):
    # Insert into set sid items.
    # If an item exists in another set, it is move to set sid.
    # redis automatically removes empty sets.
+   #
    # ------------------------------------------------------------------------
    def insert(self, sid, *items):
       pipe = self.r.pipeline()
@@ -43,10 +45,14 @@ class Collection (object):
       pipe.execute()
 
    # ------------------------------------------------------------------------
-   def remove(self, item):
+   def remove_item(self, item):
       s = self.set_of(item)
       if s is not None:
          self.remove_from(s, item)
+
+   # ------------------------------------------------------------------------
+   def remove_channel(self, channel):
+      self.r.delete(self.prefix + str(channel))
 
    # ------------------------------------------------------------------------
    def members(self, sid):
@@ -72,6 +78,8 @@ class Collection (object):
 if __name__ == '__main__':
    c = Collection('test')
    # print c.members(1), c.members(10)
-   print c.get_all()
-   c.insert(5, 5, 10, 20)
+   # c.insert(3, 7, 6, 30, 15)
+   # c.insert(6, 1,2,3,4,5)
+   # c.insert(5, 5,9,10,11,12)
+   # c.insert(5, 6)
    print c.get_all()

@@ -24,7 +24,7 @@ def event_toggle_board(message, cid):
       record.open_board = not record.open_board
       record.save()
 
-      all_records = StudentRecord.get_all()
+      all_records = StudentRecord.all_online()
 
       message_to_all = {}
       listening_clients = sse.listening_clients(cid)
@@ -65,15 +65,16 @@ def event_chat(message, cid):
 
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
-def event_join(joining_channel, cid):
+def event_join(channel, cid):
    logged_in_user = auth.get_logged_in_user()
-   sse.listen_to(joining_channel, cid)
-   user_record = StudentRecord(int(joining_channel))
-   pids = red.smembers('published-problem-set')
-   pids = sorted(int(p) for p in pids)
+   sse.listen_to(channel, cid)
+   user_record = StudentRecord(int(channel))
    m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
-   if logged_in_user.role=='teacher' or cid==joining_channel:
-      m.update(pids=pids, join_cid=joining_channel)
+   if logged_in_user.role=='teacher' or cid==channel:
+      pids = red.smembers('published-problem-set')
+      pids = sorted(int(p) for p in pids)
+      m.update(pids=pids, join_cid=channel, total_score=sum(user_record.scores.values()),
+         brownies=user_record.brownies)
    sse.notify( { cid : m } , event='join')
 
 # ----------------------------------------------------------------------------
@@ -85,19 +86,21 @@ def index():
    logged_in_user = auth.get_logged_in_user()
 
    user_record = StudentRecord(logged_in_user.id)
+   user_record.online = True
    if logged_in_user.role == 'teacher':
       user_record.view_all_boards = True
       user_record.open_board = True
    user_record.save()
 
    all_users = auth.User.select()
-   all_records = StudentRecord.get_all()
+   all_records = StudentRecord.all_online()
 
+   # notify those who can view boards that the client is online
    messages = {}
    for c, r in all_records.items():
       if int(user_record.id) != int(c) and (r.view_all_boards or user_record.open_board):
          messages[c] = dict(cid=user_record.id, board_status=user_record.open_board)
-   sse.notify(messages, event='first-join')
+   sse.notify(messages, event='online')
 
    problem_ids = red.smembers('published-problem-set')
 

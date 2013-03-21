@@ -24,19 +24,21 @@
               {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
               </a>
           {% endif %}
-          {{u.username}}'s whiteboard
+          {{u.username}}'s sandbox
           &nbsp; &nbsp;
           <span id="problem-set{{u.id}}">
             {% if logged_in_user.role == 'teacher' or u.id==user_record.id: %}
               {% for p in problem_ids: %}
-                <a href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}" target="_blank">p{{p}}</a>
+                <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}">p{{p}}</a>
               {% endfor %}
             {% endif %}
           </span>
           &nbsp; &nbsp;
           <span id="score{{u.id}}">
-            {% if user_record.id == u.id: %}
-              <div class="badge badge-success">{{sum(user_record.scores.values())}}</div><div class="badge badge-important">{{user_record.brownies}}</div>
+            {% if (logged_in_user.role == 'teacher' or u.id==user_record.id) and (u.id in all_records): %}
+              {% if not (logged_in_user.role == 'teacher' and u.id==user_record.id): %}
+              <div class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</div><div class="badge badge-important">{{all_records[u.id].brownies}}</div>
+              {% endif %}
             {% endif %}
           </span>
         </div>
@@ -70,6 +72,19 @@
 </div>
 
 
+<!-- Modal -->
+<div id="myModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h4 id="myModalLabel">Problem Description</h4>
+  </div>
+  <div class="modal-body"></div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+  </div>
+</div>
+
+
 
 <script src="{{ url_for('static', filename='codemirror/codemirror.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='codemirror/codemirror.css') }}">
@@ -99,16 +114,36 @@
     }
   });
 
+  function format_score(score, brownies){
+    var output = '<div class="badge badge-success">'+score+'</div>';
+    output += '<div class="badge badge-important">'+brownies+'</div>'
+    return output;
+  }
+  function format_problems(pids, cid){
+    var output = '';
+    var url;
+    for (var i = 0; i < pids.length; i++) {
+      url = '/problem_set/view_problem/' + pids[i] + '/' + cid;
+      output += '<a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="' + url + '">p' + pids[i] + '</a> ';
+    }
+    return output;
+  }
+  function format_board(stat){
+    if (stat == 'open') { return '<i class="icon-eye-open"></i>' ; }
+    else if (stat == 'closed') { return '<i class="icon-eye-close"></i>'; }
+    else { return ''; }
+  }
+
   $(document).ready(function(){
     // setting up for all channels
     {% for u in all_users: %}
       $('#show-my-board{{u.id}}').click(function(e){
         $.post("/sse_send", {message:{{u.id}}, event:'toggle-board', cid:{{u.id}} });
       });
-      $('.menu{{u.id}}').hide();
       $('.menu{{u.id}}').click(function(e){
         $.post('/sse_send', { message: {{u.id}}, event:'join', cid:cid });
       });
+      $('.menu{{u.id}}').hide();
     {% endfor %}
 
     // turning on active users
@@ -132,27 +167,39 @@
     // CLIENT SIDE EVENT LISTENERS
     var es = new EventSource('/sse_receive/' + cid);
 
+    es.addEventListener("online", function(event) {
+      var data = $.parseJSON(event.data);
+      $('.menu' + data.cid).show();
+      if (data.board_status == true){
+        $('.menu' + data.cid).addClass('open-board');
+      }
+    }, false);
+
+    es.addEventListener("log-out", function(event) {
+      var data = $.parseJSON(event.data);
+      $('.menu' + data.cid).removeClass('open-board');
+      $('.menu' + data.cid).removeClass('active');
+      $('#tab' + data.cid).removeClass('active');
+      $('.menu' + data.cid).hide();
+      if (data.home_cid != undefined) {
+        $('.menu' + data.home_cid).addClass('active');
+        $('#tab' + data.home_cid).addClass('active');
+      }
+    }, false);
+
     es.addEventListener("update-score", function(event) {
       var data = $.parseJSON(event.data);
-      var output = '<div class="badge badge-success">'+data.total_score+'</div>';
-      output += '<div class="badge badge-important">'+data.brownies+'</div>'
-
-      $('#score' + data.cid).html(output);
+      $('#score' + data.cid).html(format_score(data.total_score, data.brownies));
     }, false);
 
     es.addEventListener("published-problem-set", function(event) {
       var data = $.parseJSON(event.data);
       var output = '';
-      var url;
       for (var i = 0; i < data.pids.length; i++) {
         /* this check is done on the client side, since it's expensive to do on the server side */
         if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
-          url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.cid;
-          output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
+          $('#problem-set' + data.cid).html(format_problems(data.pids, data.cid));
         }
-      }
-      if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
-        $('#problem-set' + data.cid).html(output);
       }
     }, false);
 
@@ -160,20 +207,15 @@
       var data = $.parseJSON(event.data);
 
       if (data.board_status == true){
-        $('#show-my-board' + data.which).html('<i class="icon-eye-open"></i>');
+        $('#show-my-board' + data.which).html(format_board('open'));
       }
       else {
-        $('#show-my-board' + data.which).html('<i class="icon-eye-close"></i>');
+        $('#show-my-board' + data.which).html(format_board('closed'));
       }
 
       if (data.pids != undefined){
-        var output = '';
-        var url;
-        for (var i = 0; i < data.pids.length; i++) {
-          url = '/problem_set/view_problem/' + data.pids[i] + '/' + data.join_cid;
-          output += '<a href="' + url + '" target="_blank">p' + data.pids[i] + '</a> ';
-        }
-        $('#problem-set' + data.join_cid).html(output);
+        $('#score' + data.join_cid).html(format_score(data.total_score, data.brownies));
+        $('#problem-set' + data.join_cid).html(format_problems(data.pids, data.join_cid));
       }
     }, false);
 
@@ -196,14 +238,6 @@
       $('#chat-output' + data.cid).append( m );
     }, false);
 
-    es.addEventListener("first-join", function(event) {
-      var data = $.parseJSON(event.data);
-      $('.menu' + data.cid).show();
-      if (data.board_status == true){
-        $('.menu' + data.cid).addClass('open-board');
-      }
-    }, false);
-
     es.addEventListener("toggle-board", function(event) {
       var data = $.parseJSON(event.data);
       var the_cid = data.cid;
@@ -213,14 +247,14 @@
         $('.menu' + the_cid).addClass('open-board');
         $('.menu' + the_cid).show();
         if (the_cid == cid) {
-          $('#show-my-board' + the_cid).html('<i class="icon-eye-open"></i>');
+          $('#show-my-board' + the_cid).html(format_board('open'));
         }
       }
       else {
         /* close board */
         $('.menu' + the_cid).removeClass('open-board');
         if (the_cid == cid) {
-          $('#show-my-board' + the_cid).html('<i class="icon-eye-close"></i>');
+          $('#show-my-board' + the_cid).html(format_board('closed'));
         }
         if (data.hide_board == true) {
           $('.menu' + the_cid).hide();
@@ -237,6 +271,11 @@
 
     // turning on editor for the current user
     editor.focus();
+
+    // reset modal after closing
+    $('body').on('hidden', '.modal', function () {
+      $(this).removeData('modal');
+    });
   });
 </script>
 

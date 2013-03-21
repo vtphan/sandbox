@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, Blueprint
 from config import app, db, auth, red
 from student_record import StudentRecord
+import sse
 
 user_page = Blueprint('user_page', __name__, url_prefix='/user', template_folder='templates/user')
 
@@ -22,6 +23,22 @@ def init_user_table():
 def logout():
    user = auth.get_logged_in_user()
    auth.logout_user(user)
+   user_record = StudentRecord(user.id)
+   user_record.open_board = False
+   user_record.online = False
+   user_record.save()
+   all_records = StudentRecord.all_online()
+   listening_clients = sse.listening_clients(user.id)
+
+   # Turn off menu/tabs of all listeners and tell them to go home
+   mesg = {}
+   for cid in all_records:
+      mesg[cid] = dict(cid=user.id)
+      if cid in listening_clients or cid==user.id:
+         mesg[cid].update(home_cid = cid)
+         sse.listen_to(cid, cid)
+   sse.notify(mesg, event="log-out")
+
    return redirect(url_for('index'))
 
 # ----------------------------------------------------------------------------

@@ -1,0 +1,14 @@
+<div class="problem-point text-success">
+   {% if view_score: %}{{score}} out of{% endif %}
+   {{prob.points}} points
+</div>
+<div class="problem-description">{{prob.description}}</div>
+
+{% if gradable: %}
+   <p>
+      <br />
+      <a href="{{url_for('problem_set.grade_problem', pid=pid, uid=uid)}}" class="btn pull-right" target="_blank" >
+         Grade this problem for user #{{uid}}
+      </a>
+   </p>
+{% endif %}

@@ -20,15 +20,10 @@ body {
 }
 
 
-.problem {
-   padding: 0em;
-   margin: 0em;
-}
 .problem-point {
-   font-size: 110%;
+   font-size: 120%;
    float: right;
-   padding: 0.5em;
-   margin: 0;
+   margin-top: -10px;
 }
 .problem-number {
    padding: 0.5em;
@@ -37,8 +32,7 @@ body {
    color: #aaa;
 }
 .problem-description {
-   padding: 2em;
+   padding: 1em;
    margin:0em;
    font-size: 105%;
-   border: 1px solid #ddd;
 }
