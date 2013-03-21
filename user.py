@@ -18,6 +18,20 @@ def init_user_table():
       admin.save()
 
 # ----------------------------------------------------------------------------
+# @user_page.route('/logout_all')
+# @auth.role_required('teacher')
+# def logout_all():
+#    all_records = StudentRecord.all_online()
+#    mesg = {}
+#    for cid in all_records:
+#       mesg[cid] = dict(cid=cid, home_cid=cid)
+#       sse.listen_to(cid, cid)
+#    sse.notify(mesg, event="log-out")
+
+#    flash('Everyone is logged out')
+#    return redirect(url_for('index'))
+
+# ----------------------------------------------------------------------------
 @user_page.route('/logout')
 @auth.login_required
 def logout():
@@ -97,6 +111,9 @@ def edit(uid=None):
          flash('User %s is deleted' % user.username)
          return redirect(url_for('user_page.list'))
       else:
+         print request.form, 'username' in request.form
+         if 'username' in request.form:
+            user.username = request.form['username']
          user.active = 'active' in request.form
          user.email = request.form['email']
          user.role = request.form['role']
