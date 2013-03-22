@@ -71,9 +71,10 @@ class Redcord (object):
    __metaclass__ = MetaRed
    conn = redis.StrictRedis()
    pipe = conn.pipeline()
+   id_type = int
 
    def __init__(self, _id):
-      self.id = _id
+      self.id = self.id_type(_id)
       self.__id = self.__key_prefix__ + str(_id)
       self.initialize()
 
@@ -113,14 +114,14 @@ class Redcord (object):
       items = {}
       for k in keys:
          r = cls(k)
-         items[r.id] = r
+         items[cls.id_type(r.id)] = r
       return items
 
    @classmethod
    def keys(cls):
       L = len(cls.__key_prefix__)
       res = cls.conn.execute_command('keys', cls.__key_prefix__ + '*')
-      return (k[L:] for k in res)
+      return ( cls.id_type(k[L:]) for k in res )
 
    @classmethod
    def raw_keys(cls):

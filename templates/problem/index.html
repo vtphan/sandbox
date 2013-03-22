@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="{{url_for('problem_page.edit')}}" class="btn pull-right">Add</a>
+
+<ul>
+   {% for p in probs: %}
+   <li>
+      <a href="{{ url_for('problem_page.edit', pid=p.id) }}">p{{p.id}}</a> - {{p.created.strftime('%m-%d-%Y')}}
+      {% if stats[p.id]: %}
+         <a href="{{ url_for('problem_page.publish_toggle',pid=p.id) }}"><i class="icon-check"></i></a>
+      {% else: %}
+         <a href="{{ url_for('problem_page.publish_toggle',pid=p.id) }}">publish</a>
+      {% endif %}
+   </li>
+   {% endfor %}
+</ul>
+
+{% endblock %}

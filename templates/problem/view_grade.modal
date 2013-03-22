@@ -1,0 +1,35 @@
+<div class="problem-point text-success">{{prob.points}} points</div>
+<div class="problem-description">{{prob.description}}</div>
+
+<form class="form-inline" method="post" action="{{url_for('problem_page.grade')}}" id="grade-form">
+   <input type="number" name="score" id="score" class="required" value={{score}} />
+
+   <input type="hidden" name="uid" value={{student.id}} />
+   <input type="hidden" name="tid" value={{teacher.id}} />
+   <input type="hidden" name="pid" value={{prob.id}} />
+
+   <input type="submit" value="Save" /> <span id="result"></span>
+</form>
+
+<script>
+$(document).ready(function(){
+   $("#grade-form").validate();
+
+   $("#grade-form").submit(function(event) {
+      event.preventDefault();
+      var $form = $(this),
+         uid = $form.find( 'input[name="uid"]' ).val(),
+         tid = $form.find( 'input[name="tid"]' ).val(),
+         pid = $form.find( 'input[name="pid"]' ).val(),
+         score = $form.find( 'input[name="score"]' ).val(),
+         url = $form.attr('action');
+
+      var posting = $.post( url, { uid:uid, tid:tid, pid:pid, score:score } );
+
+      posting.done(function( data ) {
+         $('#result').append(data);
+         $('#myModal').modal('hide');
+      });
+   });
+});
+</script>

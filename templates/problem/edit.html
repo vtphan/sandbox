@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>
+   <a href="{{ url_for('problem_page.index')}}">Index</a> ::
+   <a href="{{ url_for('problem_page.edit')}}">Create</a> ::
+   {% if mode=='create': %}New{% else: %}Edit{% endif %}
+</h3>
+
+<form method="post" action="" id="problem-form" name="problem-form">
+
+   <label>Points</label>
+   <input type="number" name="points" id="points" class="span1 required" {% if mode=='edit': %}value="{{prob.points}}"{% endif %} /><br/>
+
+   <label>Description</label>
+   <textarea name="description" id="description" class="span8 required" rows="10">{% if mode=='edit': %}{{prob.description}}{% endif %}</textarea><br />
+
+   <br/><br/>
+   <button type="submit" class="btn" value="submit" />Save</button>
+</form>
+
+
+<script>
+$(document).ready(function(){
+   $("#problem-form").validate();
+});
+</script>
+
+{% endblock %}

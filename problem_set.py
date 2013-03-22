@@ -121,10 +121,9 @@ def edit_problem(pid):
    return render_template('problem_set/edit_problem.html', prob=prob)
 # ----------------------------------------------------------------------------
 
-@problem_set_page.route('/view_problem/<int:pid>')
-@problem_set_page.route('/view_problem/<int:pid>/<int:uid>', methods=['GET','POST'])
+@problem_set_page.route('/view_problem/<int:pid>/<int:uid>')
 @auth.login_required
-def view_problem(pid, uid=None):
+def view_problem(pid, uid):
    try:
       prob = Problem.get(Problem.id == pid)
    except Problem.DoesNotExist:
@@ -135,10 +134,8 @@ def view_problem(pid, uid=None):
    if user.role != 'teacher' and prob.viewable == False:
       return 'This problem is not ready yet.'
 
-   score = None
-   if uid is not None:
-      user_record = StudentRecord(int(uid))
-      score = user_record.scores.get(pid, None)
+   student_record = StudentRecord(int(uid))
+   score = student_record.scores.get(pid, None)
 
    view_score = score is not None and (uid==user.id or user.role=='teacher')
    gradable  = (user.role == 'teacher') and (uid != user.id)

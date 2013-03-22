@@ -18,20 +18,6 @@ def init_user_table():
       admin.save()
 
 # ----------------------------------------------------------------------------
-# @user_page.route('/logout_all')
-# @auth.role_required('teacher')
-# def logout_all():
-#    all_records = StudentRecord.all_online()
-#    mesg = {}
-#    for cid in all_records:
-#       mesg[cid] = dict(cid=cid, home_cid=cid)
-#       sse.listen_to(cid, cid)
-#    sse.notify(mesg, event="log-out")
-
-#    flash('Everyone is logged out')
-#    return redirect(url_for('index'))
-
-# ----------------------------------------------------------------------------
 @user_page.route('/logout')
 @auth.login_required
 def logout():
@@ -54,25 +40,6 @@ def logout():
    sse.notify(mesg, event="log-out")
 
    return redirect(url_for('index'))
-
-# ----------------------------------------------------------------------------
-# @user_page.route('/grade/<int:uid>', methods=['GET','POST'])
-# @auth.role_required('teacher')
-# def grade(uid):
-#    user = StudentRecord(uid)
-#    problem_ids = red.smembers('published-problem-set')
-#    problem_ids = [int(p) for p in problem_ids]
-
-#    if request.method == 'POST':
-#       for p in problem_ids:
-#          prob_field = 'p%s' % p
-#          if prob_field in request.form:
-#             user.scores[p] = int(request.form[prob_field])
-#       user.save()
-#       print request.form
-#       return redirect(url_for('user_page.grade', uid=user.id))
-
-#    return render_template('user/grade.html', user=user, problem_ids=problem_ids)
 
 # ----------------------------------------------------------------------------
 @user_page.route('/list', methods=['GET','POST'])

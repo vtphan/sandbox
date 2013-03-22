@@ -1,0 +1,2 @@
+<div class="problem-point text-success">{{prob.points}} points</div>
+<div class="problem-description">{{prob.description}}</div>

@@ -2,8 +2,7 @@
 {% block content %}
 
 <input type="hidden" id="cid" value="{{user_record.id}}" />
-<input type="hidden" id="I_can_view_all" value="{{user_record.view_all_boards}}" />
-<input type="hidden" id="is_teacher" value="{{logged_in_user.role == 'teacher'}}" />
+<input type="hidden" id="is_teacher" value="{{user_record.is_teacher}}" />
 
 <div class="tabbable tabs-right">
   <ul class="nav nav-tabs">
@@ -27,16 +26,16 @@
           {{u.username}}'s sandbox
           &nbsp; &nbsp;
           <span id="problem-set{{u.id}}">
-            {% if logged_in_user.role == 'teacher' or u.id==user_record.id: %}
+            {% if user_record.is_teacher or u.id==user_record.id: %}
               {% for p in problem_ids: %}
-                <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_set.view_problem', pid=p,uid=u.id)}}">p{{p}}</a>
+                <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_page.view', pid=p)}}">p{{p}}</a>
               {% endfor %}
             {% endif %}
           </span>
           &nbsp; &nbsp;
           <span id="score{{u.id}}">
-            {% if (logged_in_user.role == 'teacher' or u.id==user_record.id) and (u.id in all_records): %}
-              {% if not (logged_in_user.role == 'teacher' and u.id==user_record.id): %}
+            {% if (user_record.is_teacher or u.id==user_record.id) and (u.id in all_records): %}
+              {% if not (user_record.is_teacher and u.id==user_record.id): %}
               <div class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</div><div class="badge badge-important">{{all_records[u.id].brownies}}</div>
               {% endif %}
             {% endif %}
@@ -80,7 +79,6 @@
   </div>
   <div class="modal-body"></div>
   <div class="modal-footer">
-    <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
   </div>
 </div>
 
@@ -119,11 +117,14 @@
     output += '<div class="badge badge-important">'+brownies+'</div>'
     return output;
   }
-  function format_problems(pids, cid){
+  function format_problems(pids, target_cid){
     var output = '';
     var url;
     for (var i = 0; i < pids.length; i++) {
-      url = '/problem_set/view_problem/' + pids[i] + '/' + cid;
+      url = '/problem/view/' + pids[i];
+      if ( ($('#is_teacher').val() == 'True') && (cid != target_cid) ) {
+        url += '/' + target_cid
+      }
       output += '<a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="' + url + '">p' + pids[i] + '</a> ';
     }
     return output;
@@ -148,7 +149,7 @@
 
     // turning on active users
     {% for uid, user in all_records.items(): %}
-      {% if uid==user_record.id or user.open_board or all_records[user_record.id].view_all_boards: %}
+      {% if uid==user_record.id or user.open_board or all_records[user_record.id].is_teacher: %}
         $('.menu{{uid}}').show();
       {% endif %}
       {% if user.open_board: %}
@@ -192,14 +193,12 @@
       $('#score' + data.cid).html(format_score(data.total_score, data.brownies));
     }, false);
 
-    es.addEventListener("published-problem-set", function(event) {
+    es.addEventListener("problems-updated", function(event) {
       var data = $.parseJSON(event.data);
       var output = '';
-      for (var i = 0; i < data.pids.length; i++) {
-        /* this check is done on the client side, since it's expensive to do on the server side */
-        if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
-          $('#problem-set' + data.cid).html(format_problems(data.pids, data.cid));
-        }
+      /* this check is done on the client side, since it's expensive to do on the server side */
+      if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
+        $('#problem-set' + data.cid).html(format_problems(data.pids, data.cid));
       }
     }, false);
 
@@ -214,7 +213,9 @@
       }
 
       if (data.pids != undefined){
-        $('#score' + data.join_cid).html(format_score(data.total_score, data.brownies));
+        if ( $('#is_teacher').val() != 'True' ){
+          $('#score' + data.join_cid).html(format_score(data.total_score, data.brownies));
+        }
         $('#problem-set' + data.join_cid).html(format_problems(data.pids, data.join_cid));
       }
     }, false);
@@ -256,8 +257,10 @@
         if (the_cid == cid) {
           $('#show-my-board' + the_cid).html(format_board('closed'));
         }
-        if (data.hide_board == true) {
-          $('.menu' + the_cid).hide();
+        if ($('#is_teacher').val() != 'True') {
+          if (cid != the_cid){
+            $('.menu' + the_cid).hide();
+          }
 
           if (data.back_to_homeboard == true) { /* only affect those currently listening */
             $('.menu' + the_cid).removeClass('active');
