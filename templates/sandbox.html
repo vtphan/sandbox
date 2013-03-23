@@ -56,6 +56,7 @@
           <div class="span4">
             <input class="chat-input span12 input-tiny" type="text" placeholder="chat..." />
             <div id="chat-output{{u.id}}" class="chatspace"></div>
+            <div id="listeners{{u.id}}" class="listener-box text-info">{{ ', '.join(listeners) }}</div>
           </div>
         </div>
 
@@ -134,6 +135,22 @@
     else if (stat == 'closed') { return '<i class="icon-eye-close"></i>'; }
     else { return ''; }
   }
+  function format_notice(notice){
+    return '<div class="text-warning">' + notice + '</div>';
+  }
+  function format_chat(who, mesg){
+    return '<i class="icon-hand-right"></i> <strong>'+who+'</strong>: ' + mesg + '<br/>';
+  }
+  function format_listener_list(listeners){
+    output = '';
+    if (listeners.length > 0){
+      output += listeners[0];
+      for (var i = 1; i< listeners.length; i++){
+        output += ', ' + listeners[i];
+      }
+    }
+    return output;
+  }
 
   $(document).ready(function(){
     // setting up for all channels
@@ -167,6 +184,11 @@
 
     // CLIENT SIDE EVENT LISTENERS
     var es = new EventSource('/sse_receive/' + cid);
+
+    es.addEventListener("listeners-update", function(event) {
+      var data = $.parseJSON(event.data);
+      $('#listeners' + data.host_cid).html(format_listener_list(data.listeners));
+    }, false);
 
     es.addEventListener("online", function(event) {
       var data = $.parseJSON(event.data);
@@ -205,20 +227,31 @@
     es.addEventListener("join", function(event) {
       var data = $.parseJSON(event.data);
 
-      if (data.board_status == true){
-        $('#show-my-board' + data.which).html(format_board('open'));
-      }
-      else {
-        $('#show-my-board' + data.which).html(format_board('closed'));
+      if (data.board_status != undefined){
+        if (data.board_status == true){
+          $('#show-my-board' + data.host_cid).html(format_board('open'));
+        }
+        else {
+          $('#show-my-board' + data.host_cid).html(format_board('closed'));
+        }
       }
 
       if (data.pids != undefined){
         if ( $('#is_teacher').val() != 'True' ){
-          $('#score' + data.join_cid).html(format_score(data.total_score, data.brownies));
+          $('#score' + data.host_cid).html(format_score(data.total_score, data.brownies));
         }
-        $('#problem-set' + data.join_cid).html(format_problems(data.pids, data.join_cid));
+        $('#problem-set' + data.host_cid).html(format_problems(data.pids, data.host_cid));
+      }
+
+      if (data.notice != undefined) {
+        $('#chat-output' + data.host_cid).prepend(format_notice(data.notice));
       }
     }, false);
+
+    // es.addEventListener("welcome", function(event){
+    //   var data = $.parseJSON(event.data);
+    //   $('#chat-output' + data.host_cid).prepend(format_welcome(data.welcome));
+    // }, false);
 
     es.addEventListener("run-code", function(event) {
       var data = $.parseJSON(event.data);
@@ -235,8 +268,7 @@
 
     es.addEventListener("chat", function(event) {
       var data = $.parseJSON(event.data);
-      var m = '<i class="icon-hand-right"></i> <strong>'+data.username+'</strong>: ' + data.chat + '<br/>';
-      $('#chat-output' + data.cid).append( m );
+      $('#chat-output' + data.cid).prepend( format_chat(data.username, data.chat) );
     }, false);
 
     es.addEventListener("toggle-board", function(event) {

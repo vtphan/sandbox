@@ -2,14 +2,21 @@ body {
   padding-top: 50px; /* 60px to make the container go all the way to the bottom of the topbar */
 }
 .codespace{
-   height:420px !important; overflow:scroll;
+   height:430px !important; overflow:scroll;
+   margin-bottom: 0px;
 }
 .chatspace{
    height:380px !important; overflow:scroll;
 }
 .resultspace{
    height:200px !important; overflow:scroll;
+   margin-top:5px;
    font-size: 87%;
+}
+.listener-box {
+   border-top: 1px #eee solid;
+   padding: 3px 0 0 5px;
+   margin: 0px 0px 5px -10px;
 }
 .time-light {
    color: #ddd;

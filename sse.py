@@ -30,12 +30,12 @@ def on_event(ev):
    return deco
 
 # ----------------------------------------------------------------------------
-# Send messages to channels.
-# Messages is a dict with keys being channels.
+# Send things to channels.
+# Key is channel, Value is message.
 # ----------------------------------------------------------------------------
-def notify(messages, event='message'):
+def notify(things, event='message'):
    pipe = red.pipeline()
-   for channel, message in messages.items():
+   for channel, message in things.items():
       pipe.publish('sse-%s' % channel, u'%s;%s' % (event, json.dumps(message)))
    pipe.execute()
 
@@ -47,12 +47,12 @@ def notify(messages, event='message'):
 #
 # ----------------------------------------------------------------------------
 
-def broadcast(cid, to_others, to_host = None, event='message'):
+def broadcast(cid, to_others, to_host = None, additional_channels = set(), event='message'):
    # all clients that are listening to channel cid
-   clients = listening_clients(cid)
+   clients = listening_clients(cid).union(additional_channels)
    pipe = red.pipeline()
    for c in clients:
-      if c == str(cid):
+      if int(c) == int(cid):
          if to_host is not None:
             pipe.publish('sse-%s' % cid, u'%s;%s' % (event, json.dumps(to_host)))
       else:
@@ -73,9 +73,9 @@ def listening_clients(channel):
    return channel_collection.members(channel)
 
 # ----------------------------------------------------------------------------
+# Current channel the client is in
+# ----------------------------------------------------------------------------
 
-# todo:  look up current channel for many clients at the same time
-#
 def current_channel(client):
    return channel_collection.set_of(client)
 

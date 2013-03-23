@@ -55,27 +55,53 @@ def event_send_code(message, cid):
 # ----------------------------------------------------------------------------
 @sse.on_event('chat')
 def event_chat(message, cid):
-   teachers = StudentRecord.get_all( lambda v: v.is_teacher == True)
-   user = StudentRecord(cid)
-   now = datetime.datetime.now().replace(microsecond=0).time()
+   chatter = StudentRecord(cid)
    channel = sse.current_channel(cid)
-
-   m = dict(cid=channel, chat=message, time=now.strftime('%I:%M'), username=user.username, uid=user.id)
-   sse.broadcast(channel, m, m, event='chat')
+   teachers = StudentRecord.get_all( lambda v: v.is_teacher == True)
+   m = dict(cid=channel, chat=message, username=chatter.username)
+   sse.broadcast(channel, m, m, additional_channels=teachers.keys(), event='chat')
 
 # ----------------------------------------------------------------------------
+# client "guest" joins channel "host"
+# TODO: pass along all users joining the channel
+# ----------------------------------------------------------------------------
 @sse.on_event('join')
-def event_join(channel, cid):
-   this_user = StudentRecord(cid)
-   sse.listen_to(channel, cid)
-   user_record = StudentRecord(channel)
-   m = dict(cid=cid, which=user_record.id, board_status=user_record.open_board)
-   if this_user.is_teacher or cid==channel:
+def event_join(host, guest):
+   records = StudentRecord.all_online()
+   guest_record = records[int(guest)]
+   host_record = records[int(host)]
+   host_channel = sse.current_channel(host)
+
+   guest_channel = sse.current_channel(guest)
+   sse.listen_to(host, guest)
+
+   m = dict(cid=guest, host_cid=host, board_status=host_record.open_board)
+
+   if host!=guest and int(host)!=int(host_channel):
+      # host is elsewhere
+      host_of_host = records[int(host_channel)]
+      m.update(notice = "%s is visiting %s's sandbox" % (host_record.username, host_of_host.username))
+
+   if guest_record.is_teacher or guest==host:
       pids = red.smembers('published-problems')
       pids = sorted(int(p) for p in pids)
-      m.update(pids=pids, join_cid=channel, total_score=sum(user_record.scores.values()),
-         brownies=user_record.brownies)
-   sse.notify( { cid : m } , event='join')
+      m.update(pids=pids, total_score=sum(host_record.scores.values()),
+         brownies=host_record.brownies)
+
+   sse.notify( { guest : m } , event='join')
+
+   ## Inform old channel and new channel of updated listeners list
+   guest_listeners = [ records[int(i)].username for i in sse.listening_clients(guest_channel) ]
+   m = dict(host_cid=guest_channel, listeners=guest_listeners)
+   sse.broadcast(guest_channel, m, m, event='listeners-update')
+
+   host_listeners = [ records[int(i)].username for i in sse.listening_clients(host) ]
+   m = dict(host_cid=host, listeners=host_listeners)
+   sse.broadcast(host, m, m, event='listeners-update')
+
+   # print '%s leaves; inform %s with %s' % (guest, guest_channel, guest_listeners)
+   # print '%s joins; inform %s with %s' % (guest, host, host_listeners)
+
 
 # ----------------------------------------------------------------------------
 # sandbox view
@@ -104,11 +130,13 @@ def index():
    sse.notify(messages, event='online')
 
    problem_ids = red.smembers('published-problems')
+   listeners = [ all_records[int(i)].username for i in sse.listening_clients(user_record.id)]
 
    return render_template('sandbox.html', problem_ids=problem_ids, sum=sum,
       user_record = user_record,
       all_records = all_records,
-      all_users = all_users)
+      all_users = all_users,
+      listeners = listeners)
 
 # ----------------------------------------------------------------------------
 def execute_python_code(code):
