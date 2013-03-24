@@ -13,6 +13,15 @@ from config import app, auth, red
 from student_record import StudentRecord
 
 sandbox_bp = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
+
+# ----------------------------------------------------------------------------
+@sandbox_bp.before_app_first_request
+def init():
+   red.set('chat-count', 0)
+
+def chat_id():
+   return red.incr('chat-count')
+
 # ----------------------------------------------------------------------------
 # Event listeners
 # ----------------------------------------------------------------------------
@@ -58,7 +67,7 @@ def event_chat(message, cid):
    chatter = StudentRecord(cid)
    channel = sse.current_channel(cid)
    teachers = StudentRecord.get_all( lambda v: v.is_teacher == True)
-   m = dict(cid=channel, chat=message, username=chatter.username)
+   m = dict(cid=channel, chat=message, chat_id=chat_id(), uid=chatter.id, username=chatter.username)
    sse.broadcast(channel, m, m, additional_channels=teachers.keys(), event='chat')
 
 # ----------------------------------------------------------------------------

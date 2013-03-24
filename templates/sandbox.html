@@ -74,13 +74,8 @@
 
 <!-- Modal -->
 <div id="myModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-    <h4 id="myModalLabel">Problem Description</h4>
-  </div>
+  <div class="modal-header"></div>
   <div class="modal-body"></div>
-  <div class="modal-footer">
-  </div>
 </div>
 
 
@@ -138,8 +133,18 @@
   function format_notice(notice){
     return '<div class="text-warning">' + notice + '</div>';
   }
-  function format_chat(who, mesg){
-    return '<i class="icon-hand-right"></i> <strong>'+who+'</strong>: ' + mesg + '<br/>';
+  function format_chat(who, uid, mesg, chat_id){
+    var w = who;
+    mesg = '<span class="chat-message-'+chat_id+'">'+mesg+'</span>';
+    if (($('#is_teacher').val() == 'True') && (cid != uid)) {
+      w = '<a data-target="#myModal" data-toggle="modal" href="/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id + '">' + w + '</a>';
+    }
+    return '<i class="icon-hand-right"></i> <strong>'+w+'</strong>: ' + mesg + '<br/>';
+  }
+  function format_brownie_message(chat_id){
+    out = 'You have been awarded a brownie for this comment:';
+    out += '<blockquote>' + $('.chat-message-'+chat_id).html() + '</blockquote>';
+    return out;
   }
   function format_listener_list(listeners){
     output = '';
@@ -213,6 +218,10 @@
     es.addEventListener("update-score", function(event) {
       var data = $.parseJSON(event.data);
       $('#score' + data.cid).html(format_score(data.total_score, data.brownies));
+      if (data.chat_id != undefined){
+        $('.modal-body').html(format_brownie_message(data.chat_id));
+        $('#myModal').modal('show');
+      }
     }, false);
 
     es.addEventListener("problems-updated", function(event) {
@@ -237,21 +246,17 @@
       }
 
       if (data.pids != undefined){
-        if ( $('#is_teacher').val() != 'True' ){
-          $('#score' + data.host_cid).html(format_score(data.total_score, data.brownies));
-        }
         $('#problem-set' + data.host_cid).html(format_problems(data.pids, data.host_cid));
+      }
+
+      if ( (data.total_score != undefined) && (data.host_cid != cid) ){
+        $('#score' + data.host_cid).html(format_score(data.total_score, data.brownies));
       }
 
       if (data.notice != undefined) {
         $('#chat-output' + data.host_cid).prepend(format_notice(data.notice));
       }
     }, false);
-
-    // es.addEventListener("welcome", function(event){
-    //   var data = $.parseJSON(event.data);
-    //   $('#chat-output' + data.host_cid).prepend(format_welcome(data.welcome));
-    // }, false);
 
     es.addEventListener("run-code", function(event) {
       var data = $.parseJSON(event.data);
@@ -268,7 +273,7 @@
 
     es.addEventListener("chat", function(event) {
       var data = $.parseJSON(event.data);
-      $('#chat-output' + data.cid).prepend( format_chat(data.username, data.chat) );
+      $('#chat-output' + data.cid).prepend( format_chat(data.username, data.uid, data.chat, data.chat_id) );
     }, false);
 
     es.addEventListener("toggle-board", function(event) {

@@ -45,6 +45,27 @@ def index():
 
 # ----------------------------------------------------------------------------
 
+@problem_page.route('/award_brownie/<int:uid>/<int:tid>/<int:chat_id>')
+@auth.role_required('teacher')
+def award_brownie(uid, tid, chat_id):
+   student = StudentRecord(uid)
+   student.brownies += 1
+   student.save()
+
+   message = {}
+   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies,
+      total_score=sum(student.scores.values()))
+
+   if int(sse.current_channel(student.id)) == student.id:
+      # only update score if teacher is in the student's sandbox; if not, no need to update.
+      message[tid] = dict(cid=student.id, brownies=student.brownies,
+         total_score=sum(student.scores.values()))
+
+   sse.notify(message, event="update-score")
+
+   return 'A brownie has been awarded to %s.' % student.username
+
+# ----------------------------------------------------------------------------
 @problem_page.route('/publish_toggle/<int:pid>')
 @auth.role_required('teacher')
 def publish_toggle(pid):
