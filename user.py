@@ -38,6 +38,7 @@ def logout():
          mesg[cid].update(home_cid = cid)
          sse.listen_to(cid, cid)
    sse.notify(mesg, event="log-out")
+   sse.close(user_record.id)
 
    return redirect(url_for('index'))
 

@@ -15,16 +15,12 @@
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/sandbox.css') }}">
 </head>
 <body>
-<div class="navbar navbar-inverse navbar-fixed-top">
+<div class="navbar navbar-fixed-top">
    <div class="navbar-inner">
       <div class="container">
-         <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-         <span class="icon-bar"></span>
-         <span class="icon-bar"></span>
-         <span class="icon-bar"></span>
-         </button>
-         <a class="brand" href="{{url_for('index')}}" target="_blank" title="Homepage"><i class="icon-home"></i></a>
-         <a class="brand" href="{{url_for('user_page.logout')}}" title="Log out"><i class="icon-off"></i></a>
+         <a class="brand" href="#">SANDBOXES</a>
+
+         <a class="logout-btn" href="{{url_for('user_page.logout')}}" title="Log out" id="logout"><i class="icon-off"></i></a>
      </div>
    </div>
  </div>

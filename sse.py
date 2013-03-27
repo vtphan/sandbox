@@ -2,7 +2,7 @@ import json
 from config import red, app
 from flask import request, Blueprint, Response
 from collection import Collection
-
+import time
 
 sse_bp = Blueprint('sse', __name__, template_folder='templates')
 
@@ -81,6 +81,12 @@ def current_channel(client):
 
 
 # ----------------------------------------------------------------------------
+def close(cid):
+   red.publish('sse-%s' % cid, u'close-client-channel;close-client-channel')
+   time.sleep(0.5)
+   red.publish('sse-%s' % cid, u'close-channel;')
+
+# ----------------------------------------------------------------------------
 # CLIENT SIDE
 # ----------------------------------------------------------------------------
 
@@ -109,16 +115,20 @@ def sse_send():
 # ----------------------------------------------------------------------------
 @sse_bp.route('/sse_receive/<int:cid>')
 def sse_receive(cid):
-   def event_stream():
+   def event_stream(cid):
       pubsub = red.pubsub()
       pubsub.subscribe('sse-%s' % cid)
       listen_to(cid, cid)
+      print 'Channel %s is open.' % cid
       for message in pubsub.listen():
          if isinstance(message['data'], basestring):
             event, mesg = message['data'].split(';', 1)
-            # print event, mesg
+            if event == 'close-channel':
+               break
             yield 'event: {0}\ndata: {1}\n\n'.format(event, mesg)
 
-   return Response(event_stream(), mimetype="text/event-stream")
+      print 'Channel %s is closed.' % cid
+
+   return Response(event_stream(cid), mimetype="text/event-stream")
 
 # ----------------------------------------------------------------------------

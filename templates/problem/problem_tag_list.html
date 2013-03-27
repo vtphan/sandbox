@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<table class="table">
+   <thead><th>p_t_id</th><th>p_id</th><th>t_id</th></thead>
+   {% for e in entries: %}
+   <tr>
+      <td>{{ e.id }}</td><td>{{ e.problem.id }}</td><td>{{ e.tag.name }}</td>
+   </tr>
+   {% endfor %}
+</table>
+
+{% endblock %}

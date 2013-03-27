@@ -143,7 +143,7 @@
   }
   function format_brownie_message(chat_id){
     out = 'You have been awarded a brownie for this comment:';
-    out += '<blockquote>' + $('.chat-message-'+chat_id).html() + '</blockquote>';
+    out += '<blockquote class="text-success">' + $('.chat-message-'+chat_id).html() + '</blockquote>';
     return out;
   }
   function format_listener_list(listeners){
@@ -309,12 +309,22 @@
       }
     }, false);
 
+    es.addEventListener("close-client-channel", function(event) {
+      console.log('Channel ' + cid + ' is being closed.');
+      es.close();
+      window.location = "/user/logout";
+    }, false);
+
+
     // turning on editor for the current user
     editor.focus();
 
     // reset modal after closing
     $('body').on('hidden', '.modal', function () {
       $(this).removeData('modal');
+    });
+    $('#logout').click( function(e){
+      es.close();
     });
   });
 </script>

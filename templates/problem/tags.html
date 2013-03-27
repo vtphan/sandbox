@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<a href="{{url_for('problem_page.edit_tag')}}" class="btn pull-right">new tag</a>
+<h3>Existing Tags</h3>
+
+<ul>
+   {% for t in tags: %}
+   <li>
+      <a href="{{url_for('problem_page.edit_tag', tid=t.id)}}">{{t.name}}</a>
+   </li>
+   {% endfor %}
+</ul>
+
+{% endblock %}

@@ -139,7 +139,7 @@ def index():
    sse.notify(messages, event='online')
 
    problem_ids = red.smembers('published-problems')
-   listeners = [ all_records[int(i)].username for i in sse.listening_clients(user_record.id)]
+   listeners=[all_records[int(i)].username for i in sse.listening_clients(user_record.id) if int(i) in all_records]
 
    return render_template('sandbox.html', problem_ids=problem_ids, sum=sum,
       user_record = user_record,

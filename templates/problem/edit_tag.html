@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>
+   <a href="{{ url_for('problem_page.tags')}}">Tags</a> ::
+   <a href="{{ url_for('problem_page.edit_tag')}}">Create new tag</a> ::
+   {% if mode=='create': %}New{% else: %}Edit{% endif %}
+</h3>
+
+<form method="post" action="" id="tag-form" name="tag-form">
+
+   <label>Tag name</label>
+   <input type="text" id="tags" name="name" class="span4 required" {% if tag: %}value={{tag.name}}{% endif %}><br />
+
+   <br/><br/>
+   <button type="submit" class="btn" value="submit" />Save</button>
+</form>
+
+
+<script>
+$(document).ready(function(){
+   $("#problem-form").validate();
+});
+</script>
+
+{% endblock %}

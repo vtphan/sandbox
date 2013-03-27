@@ -1,1 +1,2 @@
-gunicorn --debug --worker-class=gevent -t 99999 app:app
+#gunicorn --debug --worker-class=gevent -t 99999 app:app
+gunicorn -c gunicorn_conf.py app:app
