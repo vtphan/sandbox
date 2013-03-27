@@ -10,7 +10,7 @@
    <label>Description</label>
    <textarea name="description" id="description" class="span8 required" rows="10">{% if mode=='edit': %}{{prob.description}}{% endif %}</textarea><br />
 
-   <label>Tags</label>
+   <label>Knowledge Taxonomy</label>
    <select multiple name="tags" id="tags">
       {% for t in tags: %}
       <option value="{{t.id}}" name="tag" class="tag">{{t.name}}</option>

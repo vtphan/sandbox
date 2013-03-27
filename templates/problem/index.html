@@ -1,13 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
 
-<ul class="nav nav-pills">
-   <li class="active"><a href="#">Problem Index</a></li>
-   <li><a href="{{url_for('problem_page.create')}}">Add</a></li>
-</ul>
+<h4>Knowledge Taxonomy</h4>
+<p>
+   <a href="{{url_for('problem_page.edit_tag')}}"><i class="icon-plus-sign"></i></a> &nbsp;
+
+   {% for t in tags: %}
+      <a href="{{url_for('problem_page.edit_tag', tid=t.id)}}">{{t.name}}</a> &nbsp;
+   {% endfor %}
+</p>
+<br/>
+
+<h4>Problems</h4>
+
+<a href="{{url_for('problem_page.create')}}"><i class="icon-plus-sign"></i></a>
 
 <table class="table">
-   <thead><th>pid</th><th>Created</th><th>Tags</th><th>Status</th></thead>
+   <thead><th>pid</th><th>Created</th><th>Knowledge Taxonomy</th><th>Status</th></thead>
 
    {% for pid,v in sorted(items.items(), reverse=True): %}
       <tr>

@@ -1,19 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h3>
-   <a href="{{ url_for('problem_page.tags')}}">Tags</a> ::
-   <a href="{{ url_for('problem_page.edit_tag')}}">Create new tag</a> ::
-   {% if mode=='create': %}New{% else: %}Edit{% endif %}
-</h3>
+<h4>
+   {% if tag: %}
+      Edit tag {{tag.name}}
+   {% else: %}
+      Add new tag
+   {% endif %}
+</h4>
 
-<form method="post" action="" id="tag-form" name="tag-form">
+<form method="post" action="" id="tag-form" name="tag-form" class="form-horizontal">
 
-   <label>Tag name</label>
-   <input type="text" id="tags" name="name" class="span4 required" {% if tag: %}value={{tag.name}}{% endif %}><br />
+   <div class="control-group">
+      <label class="control-label" for="name">Tag name</label>
+      <div class="controls">
+      <input type="text" id="tags" name="name" class="span4 required" {% if tag: %}value={{tag.name}}{% endif %}>
+      </div>
+   </div>
 
-   <br/><br/>
-   <button type="submit" class="btn" value="submit" />Save</button>
+   {% if tag: %}
+   <div class="control-group">
+         <label class="control-label ">Delete</label>
+         <div class="controls">
+            <input type="checkbox" name="delete" id="delete">
+         </div>
+   </div>
+   {% endif %}
+
+   <div class="control-group">
+      <label class="control-label"></label>
+      <div class="controls">
+      <button type="submit" class="btn" value="submit" />Save</button>
+      </div>
+   </div>
 </form>
 
 

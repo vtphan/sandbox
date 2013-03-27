@@ -53,7 +53,9 @@ def index():
    published_probs = [int(p) for p in published_probs]
    stats = { pid : (pid in published_probs) for pid in items }
 
-   return render_template('problem/index.html', stats = stats, items=items, sorted=sorted)
+   tags = Tag.select()
+
+   return render_template('problem/index.html', stats = stats, items=items, tags=tags, sorted=sorted)
 
 # ----------------------------------------------------------------------------
 
@@ -127,6 +129,12 @@ def edit(pid = None):
       return url_for('problem_page.list')
 
    if request.method == 'POST':
+      if 'delete' in request.form:
+         ProblemTag.delete().where(ProblemTag.problem == p).execute()
+         p.delete_instance()
+         return redirect(url_for('problem_page.index'))
+
+
       p.points = request.form['points']
       p.description = request.form['description']
       p.save()
@@ -201,7 +209,6 @@ def view(pid, uid=None):
 @problem_page.route('/edit_tag/<int:tid>', methods=['GET','POST'])
 def edit_tag(tid = None):
    if tid is not None:
-      mode = 'edit'
       try:
          tag = Tag.get(Tag.id == tid)
       except Tag.DoesNotExist:
@@ -209,7 +216,6 @@ def edit_tag(tid = None):
          return redirect(url_for('index'))
    else:
       tag = None
-      mode = 'create'
 
    if request.method == 'POST':
       if tid is None:
@@ -217,18 +223,16 @@ def edit_tag(tid = None):
          flash('Tag created')
       else:
          flash('Tag updated')
+         if 'delete' in request.form:
+            ProblemTag.delete().where(ProblemTag.tag == tag).execute()
+            tag.delete_instance()
+            return redirect(url_for('problem_page.index'))
+
       tag.name = request.form['name']
       tag.save()
-      return redirect(url_for('problem_page.tags'))
+      return redirect(url_for('problem_page.index'))
 
    return render_template('problem/edit_tag.html', tag=tag)
-
-# ----------------------------------------------------------------------------
-
-@problem_page.route('/tags')
-def tags():
-   tags = Tag.select()
-   return render_template('problem/tags.html', tags=tags)
 
 # ----------------------------------------------------------------------------
 

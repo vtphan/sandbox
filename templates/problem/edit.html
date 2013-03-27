@@ -7,26 +7,50 @@
 </ul>
 
 
-<form method="post" action="" id="problem-form" name="problem-form">
+<form method="post" action="" id="problem-form" name="problem-form" class="form-horizontal">
 
-   <label>Points</label>
-   <input type="number" name="points" id="points" class="span1 required" value="{{p.points}}" /><br/>
+   <div class="control-group">
+      <label class="control-label">Points</label>
+      <div class="controls">
+      <input type="number" name="points" id="points" class="span1 required" value="{{p.points}}" />
+      </div>
+   </div>
 
-   <label>Description</label>
-   <textarea name="description" id="description" class="span8 required" rows="10">{{p.description}}</textarea><br />
+   <div class="control-group">
+      <label class="control-label">Description</label>
+      <div class="controls">
+      <textarea name="description" id="description" class="span8 required" rows="10">{{p.description}}</textarea>
+      </div>
 
-   <label>Tags</label>
-   <select multiple name="tags" id="tags">
-      {% for t in all_tags: %}
-      <option value="{{t.id}}" name="tag" class="tag" value="{{ t.id }}" {% if t in tags: %}selected{% endif %}>
-         {{t.name}}
-      </option>
-      {% endfor %}
-   </select>
+   </div>
 
+   <div class="control-group">
+      <label class="control-label">Knowledge Taxonomy</label>
+      <div class="controls">
+         <select multiple name="tags" id="tags">
+            {% for t in all_tags: %}
+            <option value="{{t.id}}" name="tag" class="tag" value="{{ t.id }}" {% if t in tags: %}selected{% endif %}>
+               {{t.name}}
+            </option>
+            {% endfor %}
+         </select>
+      </div>
+   </div>
 
-   <br/><br/>
-   <button type="submit" class="btn" value="submit" />Save</button>
+   <div class="control-group">
+         <label class="control-label ">Delete</label>
+         <div class="controls">
+            <input type="checkbox" name="delete" id="delete">
+         </div>
+   </div>
+
+   <div class="control-group">
+      <label class="control-label"></label>
+      <div class="controls">
+         <button type="submit" class="btn" value="submit" />Save</button>
+      </div>
+   </div>
+
 </form>
 
 
