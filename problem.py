@@ -21,20 +21,32 @@ class ProblemTag (db.Model):
    problem = ForeignKeyField(Problem)
    tag = ForeignKeyField(Tag)
 
+class Score (db.Model):
+   problem = ForeignKeyField(Problem)
+   user = ForeignKeyField(auth.User)
+   points = IntegerField()
+
+class Brownie (db.Model):
+   user = ForeignKeyField(auth.User)
+   points = IntegerField()
+
 # ----------------------------------------------------------------------------
 
 @problem_page.before_app_first_request
 def init():
-   red.delete('published-problems')
    if drop_tables:
       print 'problem.py: drop tables'
       Problem.drop_table(fail_silently=True)
       Tag.drop_table(fail_silently=True)
       ProblemTag.drop_table(fail_silently=True)
+      Score.drop_table(fail_silently=True)
+      Brownie.drop_table(fail_silently=True)
    else:
       Problem.create_table(fail_silently=True)
       Tag.create_table(fail_silently=True)
       ProblemTag.create_table(fail_silently=True)
+      Score.create_table(fail_silently=True)
+      Brownie.create_table(fail_silently=True)
 
 # ----------------------------------------------------------------------------
 
@@ -55,48 +67,11 @@ def index():
 
    tags = Tag.select()
 
+   # entries=Score.select()
+   # for e in entries:
+   #    print e.id, e.problem.id, e.user.username, e.points
+
    return render_template('problem/index.html', stats = stats, items=items, tags=tags, sorted=sorted)
-
-# ----------------------------------------------------------------------------
-
-@problem_page.route('/award_brownie/<int:uid>/<int:tid>/<int:chat_id>')
-@auth.role_required('teacher')
-def award_brownie(uid, tid, chat_id):
-   student = StudentRecord(uid)
-   student.brownies += 1
-   student.save()
-
-   message = {}
-   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies,
-      total_score=sum(student.scores.values()))
-
-   if int(sse.current_channel(student.id)) == student.id:
-      # only update score if teacher is in the student's sandbox; if not, no need to update.
-      message[tid] = dict(cid=student.id, brownies=student.brownies,
-         total_score=sum(student.scores.values()))
-
-   sse.notify(message, event="update-score")
-
-   return 'A brownie has been awarded to %s.' % student.username
-
-# ----------------------------------------------------------------------------
-@problem_page.route('/publish_toggle/<int:pid>')
-@auth.role_required('teacher')
-def publish_toggle(pid):
-   if not red.sismember('published-problems', pid):
-      red.sadd('published-problems', pid)
-   else:
-      red.srem('published-problems', pid)
-
-   all_records = StudentRecord.all_online()
-   pids = red.smembers('published-problems')
-   pids = sorted(int(p) for p in pids)
-   messages = {}
-   for k, v in all_records.items():
-      messages[k] = dict(cid = sse.current_channel(k), pids = pids)
-   sse.notify(messages, event="problems-updated")
-
-   return redirect(url_for('problem_page.index'))
 
 # ----------------------------------------------------------------------------
 
@@ -119,7 +94,6 @@ def create():
 @problem_page.route('/edit/<int:pid>', methods=['GET','POST'])
 @auth.role_required('teacher')
 def edit(pid = None):
-
    try:
       p = Problem.get(Problem.id == pid)
       tags = Tag.select().join(ProblemTag).join(Problem).where(Problem.id == pid)
@@ -158,27 +132,6 @@ def edit(pid = None):
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/grade', methods=['POST'])
-@auth.role_required('teacher')
-def grade():
-   uid = int(request.form['uid'])
-   tid = int(request.form['tid'])
-   pid = int(request.form['pid'])
-   score = int(request.form['score'])
-
-   user_record = StudentRecord(uid)
-   user_record.scores[pid] = score
-   user_record.save()
-
-   message = {}
-   m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()), brownies=user_record.brownies)
-   message[uid] = m
-   message[tid] = m
-   sse.notify(message, event="update-score")
-   return '<i class="icon-okay"></i>'
-
-# ----------------------------------------------------------------------------
-
 @problem_page.route('/view/<int:pid>/<int:uid>')
 @problem_page.route('/view/<int:pid>')
 @auth.login_required
@@ -201,6 +154,104 @@ def view(pid, uid=None):
 
    return render_template('problem/view_grade.modal', prob=prob, teacher=teacher,
       student=student, score=score)
+
+# ----------------------------------------------------------------------------
+
+@problem_page.route('/publish_toggle/<int:pid>')
+@auth.role_required('teacher')
+def publish_toggle(pid):
+   if not red.sismember('published-problems', pid):
+      red.sadd('published-problems', pid)
+   else:
+      red.srem('published-problems', pid)
+
+   all_records = StudentRecord.all_online()
+   pids = red.smembers('published-problems')
+   pids = sorted(int(p) for p in pids)
+   messages = {}
+   for k, v in all_records.items():
+      messages[k] = dict(cid = sse.current_channel(k), pids = pids)
+   sse.notify(messages, event="problems-updated")
+
+   return redirect(url_for('problem_page.index'))
+
+# ----------------------------------------------------------------------------
+
+@problem_page.route('/award_brownie/<int:uid>/<int:tid>/<int:chat_id>')
+@auth.role_required('teacher')
+def award_brownie(uid, tid, chat_id):
+   student = StudentRecord(uid)
+   student.brownies += 1
+   student.save()
+
+   message = {}
+   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies,
+      total_score=sum(student.scores.values()))
+
+   if int(sse.current_channel(student.id)) == student.id:
+      # only update score if teacher is in the student's sandbox; if not, no need to update.
+      message[tid] = dict(cid=student.id, brownies=student.brownies,
+         total_score=sum(student.scores.values()))
+
+   sse.notify(message, event="update-score")
+
+   q = Brownie.update(points = Brownie.points +1).where(Brownie.user == uid)
+   if q.execute() == 0:
+      q = Brownie.create(user=uid, points=1)
+
+   return 'A brownie has been awarded to %s.' % student.username
+
+# ----------------------------------------------------------------------------
+
+@problem_page.route('/grade', methods=['POST'])
+@auth.role_required('teacher')
+def grade():
+   uid = int(request.form['uid'])
+   tid = int(request.form['tid'])
+   pid = int(request.form['pid'])
+   score = int(request.form['score'])
+
+   # Store in redis
+   user_record = StudentRecord(uid)
+   user_record.scores[pid] = score
+   user_record.save()
+
+   message = {}
+   m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()), brownies=user_record.brownies)
+   message[uid] = m
+   message[tid] = m
+   sse.notify(message, event="update-score")
+
+   # Store in database
+   q = Score.update(points=score).where(Score.problem==pid, Score.user==uid)
+   if q.execute() == 0:
+      q = Score.create(problem=pid, user=uid, points=score)
+
+   return '<i class="icon-okay"></i>'
+
+
+# ----------------------------------------------------------------------------
+
+@problem_page.route('/grade_for/<int:uid>')
+@auth.login_required
+def grade_for(uid):
+   student = StudentRecord(uid)
+
+   try:
+      scores = Score.select().where(Score.user == uid)
+   except Score.DoesNotExist:
+      scores = []
+
+   try:
+      brownie = Brownie.get(Brownie.user = uid)
+   except Brownie.DoesNotExist:
+      brownie = None
+
+   published_pids = red.smembers('published-problems')
+   published_pids = sorted(int(p) for p in pids)
+
+   return render_template('problem/grade_for.html', scores=scores, brownie=brownie,
+      student=student, published_pids=published_pids)
 
 # ----------------------------------------------------------------------------
 # Tag management

@@ -15,9 +15,6 @@ from student_record import StudentRecord
 sandbox_bp = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
 
 # ----------------------------------------------------------------------------
-@sandbox_bp.before_app_first_request
-def init():
-   red.set('chat-count', 0)
 
 def chat_id():
    return red.incr('chat-count')

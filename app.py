@@ -15,11 +15,16 @@ def index():
 
 # ----------------------------------------------------------------------------
 
-app.register_blueprint(user_page)
-app.register_blueprint(problem_page)
 app.register_blueprint(sse_bp)
 app.register_blueprint(sandbox_bp)
+app.register_blueprint(user_page)
+app.register_blueprint(problem_page)
 
+@app.before_first_request
+def init():
+   red.delete('published-problems')
+   red.set('chat-count', 0)
+   red.flushdb()
 
 if __name__ == "__main__":
 	app.run(port=8000)
