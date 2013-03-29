@@ -1,11 +1,7 @@
 body {
   padding-top: 50px; /* 60px to make the container go all the way to the bottom of the topbar */
 }
-.logout-btn{
-  display: block;
-  float: right;
-  padding: 10px 20px 10px;
-}
+
 .codespace{
    height:430px !important; overflow:scroll;
    margin-bottom: 0px;
@@ -47,4 +43,26 @@ body {
    padding: 1em;
    margin:0em;
    font-size: 105%;
+}
+
+.logout-btn{
+  display: block;
+  float: left;
+  padding: 10px 15px 0px;
+  margin: 0 0 0 -30px;
+}
+#alert {
+  float: right;
+  margin:5px 20px 0 0;
+  padding:5px 20px 5px 20px;
+  color: #f00;
+  font-family: Courier, Georgia;
+  font-size: 110%;
+  background-color: #fdfdfd;
+}
+.modal-alert {
+  font-family: Courier;
+  font-size: 110%;
+  color: #f00;
+  padding:1em;
 }

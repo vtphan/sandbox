@@ -1,19 +1,14 @@
-{% extends "base.html" %}
-{% block content %}
+<h3>Points for {{student.username}}</h3>
 
-<h3>Grades for {{student.username}}</h3>
-
-<p>
-   Brownie points: {% if brownie: %}{{brownie.points}}{% else: %}0{% endif %}
-</p>
+<p>Total brownie points: {% if brownie: %}{{brownie.points}}{% else: %}0{% endif %}</p>
 
 <ul>
 {% for score in scores: %}
    <li>
-      Problem #<a href="{{url_for('problem_page.view', pid=score.problem.id)}}">{{score.problem.id}}</a>:
+      Problem #<a href="{{url_for('problem_page.view', pid=score.problem.id)}}" target="_blank">{{score.problem.id}}</a>:
       {{score.points}} out of {{score.problem.points}} points.
    </li>
 {% endfor %}
 </ul>
 
-{% endblock %}
+<br/>

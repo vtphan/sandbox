@@ -36,8 +36,7 @@
               <span id="score{{u.id}}">
               <div class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</div><div class="badge badge-important">{{all_records[u.id].brownies}}</div>
               </span>
-              &nbsp; &nbsp;
-              <a href="{{url_for('problem_page.grade_history', uid=u.id)}}" target="_blank"><i class="icon-file"></i></a>
+              <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem_page.grade_history', uid=u.id)}}" class="label">H</a>
             {% endif %}
           {% else: %}
             <span id="problem-set{{u.id}}"></span> &nbsp; &nbsp;
@@ -140,13 +139,15 @@
     var w = who;
     mesg = '<span class="chat-message-'+chat_id+'">'+mesg+'</span>';
     if (($('#is_teacher').val() == 'True') && (cid != uid)) {
-      w = '<a data-target="#myModal" data-toggle="modal" href="/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id + '">' + w + '</a>';
+      // w = '<a data-target="#myModal" data-toggle="modal" href="/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id + '">' + w + '</a>';
+      var url = '/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id;
+      w = '<a href="#" onclick="load_brownie_message('+uid+','+cid+','+ chat_id+');">' + w + '</a>';
     }
     return '<i class="icon-hand-right"></i> <strong>'+w+'</strong>: ' + mesg + '<br/>';
   }
   function format_brownie_message(chat_id){
-    out = 'You have been awarded a brownie for this comment:';
-    out += '<blockquote class="text-success">' + $('.chat-message-'+chat_id).html() + '</blockquote>';
+    out = '<div class="modal-alert">You have been awarded a brownie for this comment:';
+    out += '<blockquote class="text-success">' + $('.chat-message-'+chat_id).html() + '</blockquote></div>';
     return out;
   }
   function format_listener_list(listeners){
@@ -158,6 +159,12 @@
       }
     }
     return output;
+  }
+
+  function load_brownie_message(uid, cid, chat_id){
+    var url = "/problem/award_brownie/" + uid + "/" + cid + "/" + chat_id;
+    $('#alert').load(url);
+    $('#alert').show().delay(5000).fadeOut();
   }
 
   $(document).ready(function(){
@@ -225,6 +232,13 @@
         $('.modal-body').html(format_brownie_message(data.chat_id));
         $('#myModal').modal('show');
       }
+    }, false);
+
+    es.addEventListener("alert", function(event) {
+      var data = $.parseJSON(event.data);
+      // $("#alert").html(data.message).show().delay(20000).fadeOut();
+      $('.modal-body').html('<div class="modal-alert">' + data.message + '</div>');
+      $('#myModal').modal('show');
     }, false);
 
     es.addEventListener("problems-updated", function(event) {
@@ -329,6 +343,7 @@
     $('#logout').click( function(e){
       es.close();
     });
+
   });
 </script>
 

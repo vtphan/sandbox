@@ -222,6 +222,9 @@ def grade():
    message[tid] = m
    sse.notify(message, event="update-score")
 
+   m = dict(cid=uid, message='You got %s points for problem #%s.' % (score, pid))
+   sse.notify( {uid : m}, event="alert")
+
    # Store in database
    q = Score.update(points=score).where(Score.problem==pid, Score.user==uid)
    if q.execute() == 0:
