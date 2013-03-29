@@ -25,21 +25,24 @@
           {% endif %}
           {{u.username}}'s sandbox
           &nbsp; &nbsp;
-          <span id="problem-set{{u.id}}">
-            {% if user_record.is_teacher or u.id==user_record.id: %}
+          {% if (user_record.is_teacher or u.id==user_record.id) and (u.id in all_records): %}
+            <span id="problem-set{{u.id}}">
               {% for p in problem_ids: %}
                 <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_page.view', pid=p)}}">p{{p}}</a>
               {% endfor %}
-            {% endif %}
-          </span>
-          &nbsp; &nbsp;
-          <span id="score{{u.id}}">
-            {% if (user_record.is_teacher or u.id==user_record.id) and (u.id in all_records): %}
-              {% if not (user_record.is_teacher and u.id==user_record.id): %}
+            </span>
+            &nbsp; &nbsp;
+            {% if not (user_record.is_teacher and u.id==user_record.id): %}
+              <span id="score{{u.id}}">
               <div class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</div><div class="badge badge-important">{{all_records[u.id].brownies}}</div>
-              {% endif %}
+              </span>
+              &nbsp; &nbsp;
+              <a href="{{url_for('problem_page.grade_history', uid=u.id)}}" target="_blank"><i class="icon-file"></i></a>
             {% endif %}
-          </span>
+          {% else: %}
+            <span id="problem-set{{u.id}}"></span> &nbsp; &nbsp;
+            <span id="score{{u.id}}"></span>
+          {% endif %}
         </div>
 
         <div class="row-fluid">

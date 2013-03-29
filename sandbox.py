@@ -118,13 +118,6 @@ def index():
    logged_in_user = auth.get_logged_in_user()
 
    user_record = StudentRecord(logged_in_user.id)
-   user_record.username = logged_in_user.username
-   user_record.online = True
-   if logged_in_user.role == 'teacher':
-      user_record.open_board = True
-      user_record.is_teacher = True
-   user_record.save()
-
    all_users = auth.User.select()
    all_records = StudentRecord.all_online()
 

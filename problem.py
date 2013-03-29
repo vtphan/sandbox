@@ -232,9 +232,17 @@ def grade():
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/grade_for/<int:uid>')
+@problem_page.route('/grade/history')
+@problem_page.route('/grade/history/<int:uid>')
 @auth.login_required
-def grade_for(uid):
+def grade_history(uid = None):
+   logged_in_user = auth.get_logged_in_user()
+   if uid is not None:
+      if logged_in_user.role != 'teacher' and logged_in_user.id != uid:
+         return 'not allowed'
+   else:
+      uid = logged_in_user.id
+
    student = StudentRecord(uid)
 
    try:
@@ -243,14 +251,14 @@ def grade_for(uid):
       scores = []
 
    try:
-      brownie = Brownie.get(Brownie.user = uid)
+      brownie = Brownie.get(Brownie.user == uid)
    except Brownie.DoesNotExist:
       brownie = None
 
    published_pids = red.smembers('published-problems')
-   published_pids = sorted(int(p) for p in pids)
+   published_pids = sorted(int(p) for p in published_pids)
 
-   return render_template('problem/grade_for.html', scores=scores, brownie=brownie,
+   return render_template('problem/grade_history.html', scores=scores, brownie=brownie,
       student=student, published_pids=published_pids)
 
 # ----------------------------------------------------------------------------
