@@ -31,7 +31,7 @@
          </td>
          <td>
          {% if stats[pid]: %}
-            <a href="{{ url_for('problem_page.publish_toggle',pid=pid) }}"><i class="icon-check"></i></a>
+            <a href="{{ url_for('problem_page.publish_toggle',pid=pid) }}"><i class="icon-flag"></i></a>
          {% else: %}
             <a href="{{ url_for('problem_page.publish_toggle',pid=pid) }}"><i class="icon-minus-sign"></i></a>
          {% endif %}

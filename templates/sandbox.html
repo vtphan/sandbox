@@ -20,23 +20,22 @@
 
         <div class="span8">
           {% if user_record.id == u.id: %}
-              <a href="#" id="show-my-board{{u.id}}">
-              {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
-              </a>
+            <a href="#" id="show-my-board{{u.id}}">
+            {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
+            </a>
+            &nbsp;
           {% endif %}
-          {{u.username}}'s sandbox
-          &nbsp; &nbsp;
-          {% if (user_record.is_teacher or u.id==user_record.id) and (u.id in all_records): %}
-            <span class="problem-set">
-              {% for p in problem_ids: %}
-                <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_page.view', pid=p)}}">p{{p}}</a>
+          {% if (user_record.is_teacher or u.id==user_record.id) and (not (user_record.is_teacher and u.id==user_record.id)) and (u.id in all_records): %}
+            <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem_page.grade_history', uid=u.id)}}">{{u.username}}</a>'s sandbox
+            &nbsp; &nbsp;
+
+            <span id="score-{{u.id}}">
+              {% for idx, p in enumerate(problem_ids): %}
+                <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem_page.view', pid=p, uid=u.id)}}">{{p}}</a> {{all_records[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
               {% endfor %}
             </span>
-            &nbsp; &nbsp;
-            {% if not (user_record.is_teacher and u.id==user_record.id): %}
-              <span id="score{{u.id}}" class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</span><span id="brownie{{u.id}}" class="badge badge-important">{{all_records[u.id].brownies}}</span>
-              <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem_page.grade_history', uid=u.id)}}" class="label">H</a>
-            {% endif %}
+          {% else: %}
+            {{u.username}}'s sandbox
           {% endif %}
         </div>
 
@@ -134,10 +133,29 @@
     }
     return '<i class="icon-hand-right"></i> <strong>'+w+'</strong>: ' + mesg + '<br/>';
   }
+  function load_brownie_message(uid, cid, chat_id){
+    var url = "/problem/award_brownie/" + uid + "/" + cid + "/" + chat_id;
+    $('#alert').load(url);
+    $('#alert').show().delay(5000).fadeOut();
+  }
   function format_brownie_message(chat_id){
-    out = '<div class="modal-alert">You have been awarded a brownie for this comment:';
-    out += '<blockquote class="text-success">' + $('.chat-message-'+chat_id).html() + '</blockquote></div>';
-    return out;
+    return 'You have been awarded a brownie for this comment:<blockquote class="text-success">' + $('.chat-message-'+chat_id).html() + '</blockquote>';
+  }
+  function modal_alert(message) {
+    $('.modal-body').html('<div class="modal-alert">' + message + '</div>');
+    $('#myModal').modal('show');
+  }
+  function format_score(scores, uid){
+    var output = "";
+    for (var i=0; i<scores.length; i++){
+      var pid = scores[i][0];
+      var score = scores[i][1];
+      var url = '/problem/view/' + pid + '/' + uid;
+      var d = '<a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="' + url + '">';
+      d += pid + '</a> ' + score + 'pt&nbsp; &nbsp' ;
+      output += d;
+    }
+    return output;
   }
   function format_listener_list(listeners){
     output = '';
@@ -148,12 +166,6 @@
       }
     }
     return output;
-  }
-
-  function load_brownie_message(uid, cid, chat_id){
-    var url = "/problem/award_brownie/" + uid + "/" + cid + "/" + chat_id;
-    $('#alert').load(url);
-    $('#alert').show().delay(5000).fadeOut();
   }
 
 
@@ -215,46 +227,46 @@
       }
     }, false);
 
-    es.addEventListener("update-score", function(event) {
-      var data = $.parseJSON(event.data);
-      $('#score' + data.cid).html(data.total_score);
-    }, false);
-
     es.addEventListener("update-brownie", function(event) {
       var data = $.parseJSON(event.data);
-      $('#brownie' + data.cid).html(data.brownies);
-      $('.modal-body').html(format_brownie_message(data.chat_id));
-      $('#myModal').modal('show');
+      modal_alert( format_brownie_message(data.chat_id) );
     }, false);
 
     es.addEventListener("alert", function(event) {
       var data = $.parseJSON(event.data);
-      $('.modal-body').html('<div class="modal-alert">' + data.message + '</div>');
-      $('#myModal').modal('show');
+      modal_alert(data.message);
+    }, false);
+
+    es.addEventListener("scores-updated", function(event) {
+      var data = $.parseJSON(event.data);
+      var uid = data.cid;
+      $('#score-' + uid).html(format_score(data.scores, uid));
+      if ( $('#is_teacher').val() != 'True') {
+        modal_alert('You got ' + data.score + ' points for problem #' + data.pid + '.');
+      }
     }, false);
 
     es.addEventListener("problems-updated", function(event) {
       var data = $.parseJSON(event.data);
-      var output = '';
-      /* this check is done on the client side, since it's expensive to do on the server side */
-      if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
-        $('.problem-set').html(format_problems(data.pids, data.cid));
-      }
+      var uid = data.cid;
+      $('#score-' + uid).html(format_score(data.scores, uid));
     }, false);
 
     es.addEventListener("join", function(event) {
       var data = $.parseJSON(event.data);
 
-      if (data.board_status != undefined){
-        if (data.board_status == true){
-          $('#show-my-board' + data.host_cid).html(format_board('open'));
-        }
-        else {
-          $('#show-my-board' + data.host_cid).html(format_board('closed'));
-        }
+      if (data.board_status == true){
+        $('#show-my-board' + data.host_cid).html(format_board('open'));
       }
+      else {
+        $('#show-my-board' + data.host_cid).html(format_board('closed'));
+      }
+
       if (data.notice != undefined) {
         $('#chat-output' + data.host_cid).prepend(format_notice(data.notice));
+      }
+      if (data.scores != undefined) {
+        $('#score-' + data.host_cid).html(format_score(data.scores, data.host_cid));
       }
     }, false);
 
@@ -310,7 +322,6 @@
     }, false);
 
     es.addEventListener("close-client-channel", function(event) {
-      console.log('Channel ' + cid + ' is being closed.');
       es.close();
       window.location = "/user/logout";
     }, false);

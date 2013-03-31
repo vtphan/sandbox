@@ -88,11 +88,10 @@ def event_join(host, guest):
       host_of_host = records[int(host_channel)]
       m.update(notice = "%s is visiting %s's sandbox" % (host_record.username, host_of_host.username))
 
-   # if guest_record.is_teacher or guest==host:
-   #    pids = red.smembers('published-problems')
-   #    pids = sorted(int(p) for p in pids)
-   #    m.update(pids=pids), total_score=sum(host_record.scores.values()),
-   #       brownies=host_record.brownies)
+   if guest_record.is_teacher:
+      pids = sorted(int(i) for i in red.smembers('published-problems'))
+      scores = [ [p, host_record.scores.get(p,0)] for p in pids ]
+      m.update(scores=scores)
 
    sse.notify( { guest : m } , event='join')
 
@@ -130,10 +129,12 @@ def index():
          messages[c] = dict(cid=user_record.id, board_status=user_record.open_board)
    sse.notify(messages, event='online')
 
-   problem_ids = red.smembers('published-problems')
+   problem_ids = sorted(int(i) for i in red.smembers('published-problems'))
    listeners=[all_records[int(i)].username for i in sse.listening_clients(user_record.id) if int(i) in all_records]
 
-   return render_template('sandbox.html', problem_ids=problem_ids, sum=sum,
+   return render_template('sandbox.html',
+      sum=sum, enumerate=enumerate,
+      problem_ids=problem_ids,
       user_record = user_record,
       all_records = all_records,
       all_users = all_users,

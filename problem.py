@@ -166,11 +166,12 @@ def publish_toggle(pid):
       red.srem('published-problems', pid)
 
    all_records = StudentRecord.all_online()
-   pids = red.smembers('published-problems')
-   pids = sorted(int(p) for p in pids)
+   pids = sorted(int(p) for p in red.smembers('published-problems'))
    messages = {}
    for k, v in all_records.items():
-      messages[k] = dict(cid = sse.current_channel(k), pids = pids)
+      uid = sse.current_channel(k) if v.is_teacher else k
+      scores = [ [pid, all_records[uid].scores.get(pid,0)] for pid in pids ]
+      messages[k] = dict(cid = uid, scores=scores)
    sse.notify(messages, event="problems-updated")
 
    return redirect(url_for('problem_page.index'))
@@ -184,13 +185,8 @@ def award_brownie(uid, tid, chat_id):
    student.brownies += 1
    student.save()
 
-   message = {}
-   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies)
-
-   if int(sse.current_channel(student.id)) == student.id:
-      # only update if teacher is in the student's sandbox; if not, no need to update.
-      message[tid] = dict(cid=student.id, brownies=student.brownies)
-   sse.notify(message, event="update-brownie")
+   message = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies)
+   sse.notify( {uid: message}, event="update-brownie")
 
    q = Brownie.update(points = Brownie.points +1).where(Brownie.user == uid)
    if q.execute() == 0:
@@ -213,14 +209,11 @@ def grade():
    user_record.scores[pid] = score
    user_record.save()
 
-   message = {}
-   m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()))
-   message[uid] = m
-   message[tid] = m
-   sse.notify(message, event="update-score")
+   pids = sorted(int(i) for i in red.smembers('published-problems'))
+   scores = [ [p, user_record.scores.get(p,0)] for p in pids ]
+   message = dict(cid=user_record.id, scores=scores, pid=pid, score=score)
 
-   m = dict(cid=uid, message='You got %s points for problem #%s.' % (score, pid))
-   sse.notify( {uid : m}, event="alert")
+   sse.notify({uid:message, tid:message}, event="scores-updated")
 
    # Store in database
    q = Score.update(points=score).where(Score.problem==pid, Score.user==uid)
