@@ -88,11 +88,11 @@ def event_join(host, guest):
       host_of_host = records[int(host_channel)]
       m.update(notice = "%s is visiting %s's sandbox" % (host_record.username, host_of_host.username))
 
-   if guest_record.is_teacher or guest==host:
-      pids = red.smembers('published-problems')
-      pids = sorted(int(p) for p in pids)
-      m.update(pids=pids, total_score=sum(host_record.scores.values()),
-         brownies=host_record.brownies)
+   # if guest_record.is_teacher or guest==host:
+   #    pids = red.smembers('published-problems')
+   #    pids = sorted(int(p) for p in pids)
+   #    m.update(pids=pids), total_score=sum(host_record.scores.values()),
+   #       brownies=host_record.brownies)
 
    sse.notify( { guest : m } , event='join')
 
@@ -118,6 +118,8 @@ def index():
    logged_in_user = auth.get_logged_in_user()
 
    user_record = StudentRecord(logged_in_user.id)
+   user_record.online = True
+   user_record.save()
    all_users = auth.User.select()
    all_records = StudentRecord.all_online()
 

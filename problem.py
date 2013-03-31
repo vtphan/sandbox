@@ -185,15 +185,12 @@ def award_brownie(uid, tid, chat_id):
    student.save()
 
    message = {}
-   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies,
-      total_score=sum(student.scores.values()))
+   message[uid] = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies)
 
    if int(sse.current_channel(student.id)) == student.id:
-      # only update score if teacher is in the student's sandbox; if not, no need to update.
-      message[tid] = dict(cid=student.id, brownies=student.brownies,
-         total_score=sum(student.scores.values()))
-
-   sse.notify(message, event="update-score")
+      # only update if teacher is in the student's sandbox; if not, no need to update.
+      message[tid] = dict(cid=student.id, brownies=student.brownies)
+   sse.notify(message, event="update-brownie")
 
    q = Brownie.update(points = Brownie.points +1).where(Brownie.user == uid)
    if q.execute() == 0:
@@ -217,7 +214,7 @@ def grade():
    user_record.save()
 
    message = {}
-   m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()), brownies=user_record.brownies)
+   m = dict(cid=user_record.id, total_score=sum(user_record.scores.values()))
    message[uid] = m
    message[tid] = m
    sse.notify(message, event="update-score")

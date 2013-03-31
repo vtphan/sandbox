@@ -17,6 +17,7 @@
   <div class="tab-content">
     {% for u in all_users: %}
       <div class="tab-pane {% if u.id==user_record.id: %}active{% endif %}" id="tab{{u.id}}">
+
         <div class="span8">
           {% if user_record.id == u.id: %}
               <a href="#" id="show-my-board{{u.id}}">
@@ -26,21 +27,16 @@
           {{u.username}}'s sandbox
           &nbsp; &nbsp;
           {% if (user_record.is_teacher or u.id==user_record.id) and (u.id in all_records): %}
-            <span id="problem-set{{u.id}}">
+            <span class="problem-set">
               {% for p in problem_ids: %}
                 <a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="{{url_for('problem_page.view', pid=p)}}">p{{p}}</a>
               {% endfor %}
             </span>
             &nbsp; &nbsp;
             {% if not (user_record.is_teacher and u.id==user_record.id): %}
-              <span id="score{{u.id}}">
-              <div class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</div><div class="badge badge-important">{{all_records[u.id].brownies}}</div>
-              </span>
+              <span id="score{{u.id}}" class="badge badge-success">{{sum(all_records[u.id].scores.values())}}</span><span id="brownie{{u.id}}" class="badge badge-important">{{all_records[u.id].brownies}}</span>
               <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem_page.grade_history', uid=u.id)}}" class="label">H</a>
             {% endif %}
-          {% else: %}
-            <span id="problem-set{{u.id}}"></span> &nbsp; &nbsp;
-            <span id="score{{u.id}}"></span>
           {% endif %}
         </div>
 
@@ -64,10 +60,9 @@
 
         <!-- RESULT -->
         <div class="row">
-          <div class="span10">
-            <pre id="result{{u.id}}" class="resultspace"></pre>
-          </div>
+          <div class="span10"><pre id="result{{u.id}}" class="resultspace"></pre></div>
         </div>
+
       </div>
     {% endfor %}
   </div>
@@ -110,11 +105,6 @@
     }
   });
 
-  function format_score(score, brownies){
-    var output = '<div class="badge badge-success">'+score+'</div>';
-    output += '<div class="badge badge-important">'+brownies+'</div>'
-    return output;
-  }
   function format_problems(pids, target_cid){
     var output = '';
     var url;
@@ -139,7 +129,6 @@
     var w = who;
     mesg = '<span class="chat-message-'+chat_id+'">'+mesg+'</span>';
     if (($('#is_teacher').val() == 'True') && (cid != uid)) {
-      // w = '<a data-target="#myModal" data-toggle="modal" href="/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id + '">' + w + '</a>';
       var url = '/problem/award_brownie/' + uid + '/' +  cid + '/' + chat_id;
       w = '<a href="#" onclick="load_brownie_message('+uid+','+cid+','+ chat_id+');">' + w + '</a>';
     }
@@ -166,6 +155,7 @@
     $('#alert').load(url);
     $('#alert').show().delay(5000).fadeOut();
   }
+
 
   $(document).ready(function(){
     // setting up for all channels
@@ -227,16 +217,18 @@
 
     es.addEventListener("update-score", function(event) {
       var data = $.parseJSON(event.data);
-      $('#score' + data.cid).html(format_score(data.total_score, data.brownies));
-      if (data.chat_id != undefined){
-        $('.modal-body').html(format_brownie_message(data.chat_id));
-        $('#myModal').modal('show');
-      }
+      $('#score' + data.cid).html(data.total_score);
+    }, false);
+
+    es.addEventListener("update-brownie", function(event) {
+      var data = $.parseJSON(event.data);
+      $('#brownie' + data.cid).html(data.brownies);
+      $('.modal-body').html(format_brownie_message(data.chat_id));
+      $('#myModal').modal('show');
     }, false);
 
     es.addEventListener("alert", function(event) {
       var data = $.parseJSON(event.data);
-      // $("#alert").html(data.message).show().delay(20000).fadeOut();
       $('.modal-body').html('<div class="modal-alert">' + data.message + '</div>');
       $('#myModal').modal('show');
     }, false);
@@ -246,7 +238,7 @@
       var output = '';
       /* this check is done on the client side, since it's expensive to do on the server side */
       if ( ($('#is_teacher').val() == 'True') || (cid == data.cid) ) {
-        $('#problem-set' + data.cid).html(format_problems(data.pids, data.cid));
+        $('.problem-set').html(format_problems(data.pids, data.cid));
       }
     }, false);
 
@@ -261,15 +253,6 @@
           $('#show-my-board' + data.host_cid).html(format_board('closed'));
         }
       }
-
-      if (data.pids != undefined){
-        $('#problem-set' + data.host_cid).html(format_problems(data.pids, data.host_cid));
-      }
-
-      if ( (data.total_score != undefined) && (data.host_cid != cid) ){
-        $('#score' + data.host_cid).html(format_score(data.total_score, data.brownies));
-      }
-
       if (data.notice != undefined) {
         $('#chat-output' + data.host_cid).prepend(format_notice(data.notice));
       }
