@@ -91,7 +91,7 @@ def event_join(host, guest):
    if guest_record.is_teacher:
       pids = sorted(int(i) for i in red.smembers('published-problems'))
       scores = [ [p, host_record.scores.get(p,0)] for p in pids ]
-      m.update(scores=scores)
+      m.update(scores=scores, brownies=host_record.brownies)
 
    sse.notify( { guest : m } , event='join')
 

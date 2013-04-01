@@ -3,16 +3,17 @@ body {
 }
 
 .codespace{
-   height:430px !important; overflow:scroll;
+   height:400px !important; overflow:scroll;
    margin-bottom: 0px;
 }
 .chatspace{
-   height:380px !important; overflow:scroll;
+   height:360px !important; overflow:scroll;
 }
 .resultspace{
    height:200px !important; overflow:scroll;
    margin-top:5px;
    font-size: 87%;
+   width:100%;
 }
 .listener-box {
    border-top: 1px #eee solid;
@@ -65,4 +66,10 @@ body {
   font-size: 110%;
   color: #f00;
   padding:1em;
+}
+.brownies {
+  padding: 2px 5px 2px 5px;
+}
+.grade-space {
+  padding: 0em 1em 1em 1em;
 }

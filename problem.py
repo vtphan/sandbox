@@ -186,7 +186,7 @@ def award_brownie(uid, tid, chat_id):
    student.save()
 
    message = dict(cid=student.id, chat_id=chat_id, brownies=student.brownies)
-   sse.notify( {uid: message}, event="update-brownie")
+   sse.notify( {uid: message, tid : message}, event="brownie-updated")
 
    q = Brownie.update(points = Brownie.points +1).where(Brownie.user == uid)
    if q.execute() == 0:
