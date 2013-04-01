@@ -18,8 +18,17 @@
 <div class="navbar navbar-fixed-top">
    <div class="navbar-inner">
       <div class="container">
-         <a class="logout-btn" href="{{url_for('user_page.logout')}}" title="Log out" id="logout"><i class="icon-off"></i></a>
          <span class="brand" href="#">SANDBOXES</span>
+          <div id="logout-btn">
+           <a class="" href="{{url_for('user_page.logout')}}" title="Log out" id="logout"><i class="icon-off"></i></a>
+         </div>
+          <div id="show-my-board">
+            {% if user_record.open_board: %}
+              <a href="#" class="badge badge-success board-status">OPEN</a>
+            {% else: %}
+              <a href="#" class="badge badge-inverse board-status">CLOSED</a>
+            {% endif %}
+          </div>
          <span id="alert"></span>
      </div>
    </div>
@@ -35,26 +44,13 @@
   <ul class="nav nav-tabs">
     {% for u in all_users: %}
     <li class="menu{{u.id}} {% if u.id==user_record.id: %}active{% endif %}">
-      <a href="#tab{{u.id}}" data-toggle="tab">
-        {% if user_record.id==u.id: %}me{% else: %}{{u.username}}{% endif %}
-      </a>
+      <a href="#tab{{u.id}}" data-toggle="tab">{{u.username}}</a>
     </li>
     {% endfor %}
   </ul>
   <div class="tab-content">
     {% for u in all_users: %}
       <div class="tab-pane {% if u.id==user_record.id: %}active{% endif %}" id="tab{{u.id}}">
-
-        <div class="span8">
-          {% if user_record.id == u.id: %}
-            <a href="#" id="show-my-board{{u.id}}">
-            {% if user_record.open_board: %}<i class="icon-eye-open"></i>{% else: %}<i class="icon-eye-close"></i>{% endif %}
-            </a>
-            &nbsp;
-          {% endif %}
-          {{u.username}}'s sandbox
-        </div>
-
         <div class="row-fluid">
           <!-- CODE  -->
           <div class="span8">
@@ -152,8 +148,12 @@
     return output;
   }
   function format_board(stat){
-    if (stat == 'open') { return '<i class="icon-eye-open"></i>' ; }
-    else if (stat == 'closed') { return '<i class="icon-eye-close"></i>'; }
+    if (stat == 'open') {
+      return '<a href="#" id="show-my-board" class="badge badge-success board-status">OPEN</a>';
+    }
+    else if (stat == 'closed') {
+      return '<a href="#" id="show-my-board" class="badge badge-inverse board-status">CLOSED</a>';
+    }
     else { return ''; }
   }
   function format_notice(notice){
@@ -206,10 +206,11 @@
 
   $(document).ready(function(){
     // setting up for all channels
+    $('#show-my-board').click(function(e){
+      $.post("/sse_send", {message:cid, event:'toggle-board', cid:cid });
+    });
+
     {% for u in all_users: %}
-      $('#show-my-board{{u.id}}').click(function(e){
-        $.post("/sse_send", {message:{{u.id}}, event:'toggle-board', cid:{{u.id}} });
-      });
       $('.menu{{u.id}}').click(function(e){
         $.post('/sse_send', { message: {{u.id}}, event:'join', cid:cid });
       });
@@ -294,10 +295,10 @@
       var data = $.parseJSON(event.data);
 
       if (data.board_status == true){
-        $('#show-my-board' + data.host_cid).html(format_board('open'));
+        $('#show-my-board').html(format_board('open'));
       }
       else {
-        $('#show-my-board' + data.host_cid).html(format_board('closed'));
+        $('#show-my-board').html(format_board('closed'));
       }
 
       if (data.notice != undefined) {
@@ -336,14 +337,14 @@
         $('.menu' + the_cid).addClass('open-board');
         $('.menu' + the_cid).show();
         if (the_cid == cid) {
-          $('#show-my-board' + the_cid).html(format_board('open'));
+          $('#show-my-board').html(format_board('open'));
         }
       }
       else {
         /* close board */
         $('.menu' + the_cid).removeClass('open-board');
         if (the_cid == cid) {
-          $('#show-my-board' + the_cid).html(format_board('closed'));
+          $('#show-my-board').html(format_board('closed'));
         }
         if ($('#is_teacher').val() != 'True') {
           if (cid != the_cid){
