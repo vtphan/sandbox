@@ -1,19 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
 
+<ul class="breadcrumb">
+  <li><a href="{{url_for('admin')}}">Admin</a> <span class="divider">/</span></li>
+  <li class="active">Problem index</li>
+</ul>
+
 <h4>Knowledge Taxonomy</h4>
 <p>
-   <a href="{{url_for('problem_page.edit_tag')}}"><i class="icon-plus-sign"></i></a> &nbsp;
+   <a href="{{url_for('problem.edit_tag')}}"><i class="icon-plus-sign"></i></a> &nbsp;
 
    {% for t in tags: %}
-      <a href="{{url_for('problem_page.edit_tag', tid=t.id)}}">{{t.name}}</a> &nbsp;
+      <a href="{{url_for('problem.edit_tag', tid=t.id)}}">{{t.name}}</a> &nbsp;
    {% endfor %}
 </p>
 <br/>
 
 <h4>Problems</h4>
 
-<a href="{{url_for('problem_page.create')}}"><i class="icon-plus-sign"></i></a>
+<a href="{{url_for('problem.create')}}"><i class="icon-plus-sign"></i></a>
 
 <table class="table">
    <thead><th>pid</th><th>Created</th><th>Knowledge Taxonomy</th><th>Status</th></thead>
@@ -22,7 +27,7 @@
       <tr>
          <td>{{pid}}</td>
          <td>
-            <a href="{{ url_for('problem_page.edit', pid=pid) }}">{{v[0].problem.created.strftime('%m-%d-%Y')}}</a>
+            <a href="{{ url_for('problem.edit', pid=pid) }}">{{v[0].problem.created.strftime('%m-%d-%Y')}}</a>
          </td>
          <td>
             {% for p in v %}
@@ -31,9 +36,9 @@
          </td>
          <td>
          {% if stats[pid]: %}
-            <a href="{{ url_for('problem_page.publish_toggle',pid=pid) }}"><i class="icon-flag"></i></a>
+            <a href="{{ url_for('problem.publish_toggle',pid=pid) }}"><i class="icon-flag"></i></a>
          {% else: %}
-            <a href="{{ url_for('problem_page.publish_toggle',pid=pid) }}"><i class="icon-minus-sign"></i></a>
+            <a href="{{ url_for('problem.publish_toggle',pid=pid) }}"><i class="icon-minus-sign"></i></a>
          {% endif %}
          </td>
       </tr>

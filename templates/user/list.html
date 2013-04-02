@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>All users</h1>
+<ul class="breadcrumb">
+  <li><a href="{{url_for('admin')}}">Admin</a> <span class="divider">/</span></li>
+  <li class="active">User index</li>
+</ul>
 
 {% for u in users: %}
    {% if u.active: %}<i class="icon-thumbs-up"></i>{% else: %}<i class="icon-thumbs-down"></i>{% endif %}
-   <a href="{{url_for('user_page.edit', uid=u.id)}}">{{ u.username }}</a>
+   <a href="{{url_for('user.edit', uid=u.id)}}">{{ u.username }}</a>
    <br />
 {% endfor %}
 

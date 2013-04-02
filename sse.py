@@ -4,7 +4,7 @@ from flask import request, Blueprint, Response
 from collection import Collection
 import time
 
-sse_bp = Blueprint('sse', __name__, template_folder='templates')
+sse = Blueprint('sse', __name__, template_folder='templates')
 
 sse_events = {}
 channel_collection = Collection('channel', int, int)
@@ -95,7 +95,7 @@ def close(cid):
 # Client sends messages to server via sse_send
 #
 # ----------------------------------------------------------------------------
-@sse_bp.route('/sse_send', methods=['GET','POST'])
+@sse.route('/sse_send', methods=['GET','POST'])
 def sse_send():
    ev = request.form['event']
    message = request.form['message']
@@ -113,7 +113,7 @@ def sse_send():
 # Client receives streaming message (event-source) from this handle
 #
 # ----------------------------------------------------------------------------
-@sse_bp.route('/sse_receive/<int:cid>')
+@sse.route('/sse_receive/<int:cid>')
 def sse_receive(cid):
    def event_stream(cid):
       pubsub = red.pubsub()

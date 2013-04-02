@@ -1,16 +1,5 @@
 {% extends "base.html" %}
+
 {% block content %}
-
-<h5>Hi {{ user.username }}</h5>
-
-<ul class="nav nav-tabs nav-stacked">
-   <li><a href="{{url_for('sandbox.index')}}" target="_blank">My Sandbox</a></li>
-   <li><a href="{{url_for('problem_page.index')}}">Problems</a></li>
-   {% if user.role == 'teacher': %}
-      <li><a href="{{url_for('user_page.list')}}">Users</a></li>
-   {% endif %}
-   <li><a href="{{url_for('user_page.edit')}}">Edit account info</a></li>
-   <li><a href="{{url_for('user_page.logout')}}">Log out</a></li>
-</ul>
 
 {% endblock %}

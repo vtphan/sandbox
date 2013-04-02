@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<ul class="breadcrumb">
+  <li class="active">Admin</li>
+</ul>
+
+<ul class="">
+   <li><a href="{{url_for('problem.index')}}">Problems</a></li>
+   <li><a href="{{url_for('user.list')}}">Users</a></li>
+</ul>
+
+{% endblock %}

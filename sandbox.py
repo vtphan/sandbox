@@ -12,7 +12,7 @@ import sse
 from config import app, auth, red
 from student_record import StudentRecord
 
-sandbox_bp = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
+sandbox = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
 
 # ----------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ def event_join(host, guest):
 # ----------------------------------------------------------------------------
 # sandbox view
 # ----------------------------------------------------------------------------
-@sandbox_bp.route('/')
+@sandbox.route('/')
 @auth.login_required
 def index():
    logged_in_user = auth.get_logged_in_user()

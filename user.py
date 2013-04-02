@@ -3,10 +3,10 @@ from config import app, db, auth, red
 from student_record import StudentRecord
 import sse
 
-user_page = Blueprint('user_page', __name__, url_prefix='/user', template_folder='templates/user')
+user = Blueprint('user', __name__, url_prefix='/user', template_folder='templates/user')
 
 # ----------------------------------------------------------------------------
-@user_page.before_app_first_request
+@user.before_app_first_request
 def init_user_table():
    auth.User.create_table(fail_silently=True)
    if auth.User.select().count() == 0:
@@ -18,7 +18,7 @@ def init_user_table():
       admin.save()
 
 # ----------------------------------------------------------------------------
-@user_page.route('/logout')
+@user.route('/logout')
 @auth.login_required
 def logout():
    user = auth.get_logged_in_user()
@@ -43,7 +43,7 @@ def logout():
    return redirect(url_for('index'))
 
 # ----------------------------------------------------------------------------
-@user_page.route('/list', methods=['GET','POST'])
+@user.route('/list', methods=['GET','POST'])
 @auth.role_required('teacher')
 def list():
    cur_user = auth.get_logged_in_user()
@@ -56,20 +56,18 @@ def list():
       user.role = 'student'
       user.save()
       flash('user %d created' % user.id)
-      return redirect(url_for('user_page.list'))
+      return redirect(url_for('user.list'))
    return render_template('user/list.html', users=auth.User.select())
 
 # ----------------------------------------------------------------------------
-@user_page.route('/edit', methods=['GET','POST'])
-@user_page.route('/edit/<int:uid>', methods=['GET','POST'])
+@user.route('/edit', methods=['GET','POST'])
+@user.route('/edit/<int:uid>', methods=['GET','POST'])
 @auth.login_required
 def edit(uid=None):
-   redirect_to_index = uid is None
    cur_user = auth.get_logged_in_user()
    uid = cur_user.id if uid is None else uid
    if cur_user.role!='teacher' and cur_user.id!=uid:
-      flash('you do not have permission')
-      return redirect(url_for('index'))
+      return redirect(url_for('auth.permission_denied'))
 
    user = cur_user if cur_user.id==uid else auth.User.get(auth.User.id==uid)
 
@@ -77,9 +75,8 @@ def edit(uid=None):
       if 'delete' in request.form:
          user.delete_instance()
          flash('User %s is deleted' % user.username)
-         return redirect(url_for('user_page.list'))
+         return redirect(url_for('user.list'))
       else:
-         print request.form, 'username' in request.form
          if 'username' in request.form:
             user.username = request.form['username']
          user.active = 'active' in request.form
@@ -89,9 +86,8 @@ def edit(uid=None):
             user.set_password(request.form['new_password'])
          user.save()
          flash('Information updated')
-         if redirect_to_index:
-            return redirect(url_for('index'))
-         return redirect(url_for('user_page.list'))
+         if cur_user.role == 'teacher':
+            return redirect(url_for('user.list'))
    return render_template('user/edit.html', cur_user=cur_user, user=user)
 
 # ----------------------------------------------------------------------------

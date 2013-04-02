@@ -5,7 +5,7 @@ from peewee import *
 import sse
 from student_record import StudentRecord
 
-problem_page = Blueprint('problem_page', __name__, url_prefix='/problem')
+problem = Blueprint('problem', __name__, url_prefix='/problem')
 drop_tables = False
 
 # ----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ class Brownie (db.Model):
 
 # ----------------------------------------------------------------------------
 
-@problem_page.before_app_first_request
+@problem.before_app_first_request
 def init():
    if drop_tables:
       print 'problem.py: drop tables'
@@ -50,8 +50,8 @@ def init():
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/')
-@auth.login_required
+@problem.route('/')
+@auth.role_required('teacher')
 def index():
    query = ProblemTag.select(ProblemTag, Problem, Tag).join(Problem).switch(ProblemTag).join(Tag)
 
@@ -75,7 +75,8 @@ def index():
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/create', methods=['GET','POST'])
+@problem.route('/create', methods=['GET','POST'])
+@auth.role_required('teacher')
 def create():
    tags = Tag.select()
    if request.method == 'POST':
@@ -85,13 +86,13 @@ def create():
          tag = Tag.get(Tag.id == int(t))
          problem_tag = ProblemTag.create(tag=tag, problem=p)
 
-      return redirect(url_for('problem_page.index'))
+      return redirect(url_for('problem.index'))
 
    return render_template('problem/create.html', tags=tags)
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/edit/<int:pid>', methods=['GET','POST'])
+@problem.route('/edit/<int:pid>', methods=['GET','POST'])
 @auth.role_required('teacher')
 def edit(pid = None):
    try:
@@ -100,13 +101,13 @@ def edit(pid = None):
 
    except Problem.DoesNotExist:
       flash('problem %s does not exist' % pid)
-      return url_for('problem_page.list')
+      return url_for('problem.list')
 
    if request.method == 'POST':
       if 'delete' in request.form:
          ProblemTag.delete().where(ProblemTag.problem == p).execute()
          p.delete_instance()
-         return redirect(url_for('problem_page.index'))
+         return redirect(url_for('problem.index'))
 
 
       p.points = request.form['points']
@@ -125,15 +126,15 @@ def edit(pid = None):
       for t in to_insert:
          res = ProblemTag.create(problem=p, tag=t)
 
-      return redirect(url_for('problem_page.edit',pid=p.id))
+      return redirect(url_for('problem.edit',pid=p.id))
 
    all_tags = Tag.select()
    return render_template('problem/edit.html', p=p, all_tags=all_tags, tags=tags)
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/view/<int:pid>/<int:uid>')
-@problem_page.route('/view/<int:pid>')
+@problem.route('/view/<int:pid>/<int:uid>')
+@problem.route('/view/<int:pid>')
 @auth.login_required
 def view(pid, uid=None):
    try:
@@ -157,7 +158,7 @@ def view(pid, uid=None):
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/publish_toggle/<int:pid>')
+@problem.route('/publish_toggle/<int:pid>')
 @auth.role_required('teacher')
 def publish_toggle(pid):
    if not red.sismember('published-problems', pid):
@@ -174,11 +175,11 @@ def publish_toggle(pid):
       messages[k] = dict(cid = uid, scores=scores)
    sse.notify(messages, event="problems-updated")
 
-   return redirect(url_for('problem_page.index'))
+   return redirect(url_for('problem.index'))
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/award_brownie/<int:uid>/<int:tid>/<int:chat_id>')
+@problem.route('/award_brownie/<int:uid>/<int:tid>/<int:chat_id>')
 @auth.role_required('teacher')
 def award_brownie(uid, tid, chat_id):
    student = StudentRecord(uid)
@@ -196,7 +197,7 @@ def award_brownie(uid, tid, chat_id):
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/grade', methods=['POST'])
+@problem.route('/grade', methods=['POST'])
 @auth.role_required('teacher')
 def grade():
    uid = int(request.form['uid'])
@@ -225,8 +226,8 @@ def grade():
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/grade/history')
-@problem_page.route('/grade/history/<int:uid>')
+@problem.route('/grade/history')
+@problem.route('/grade/history/<int:uid>')
 @auth.login_required
 def grade_history(uid = None):
    logged_in_user = auth.get_logged_in_user()
@@ -257,8 +258,9 @@ def grade_history(uid = None):
 # ----------------------------------------------------------------------------
 # Tag management
 # ----------------------------------------------------------------------------
-@problem_page.route('/edit_tag', methods=['GET','POST'])
-@problem_page.route('/edit_tag/<int:tid>', methods=['GET','POST'])
+@problem.route('/edit_tag', methods=['GET','POST'])
+@problem.route('/edit_tag/<int:tid>', methods=['GET','POST'])
+@auth.role_required('teacher')
 def edit_tag(tid = None):
    if tid is not None:
       try:
@@ -278,17 +280,18 @@ def edit_tag(tid = None):
          if 'delete' in request.form:
             ProblemTag.delete().where(ProblemTag.tag == tag).execute()
             tag.delete_instance()
-            return redirect(url_for('problem_page.index'))
+            return redirect(url_for('problem.index'))
 
       tag.name = request.form['name']
       tag.save()
-      return redirect(url_for('problem_page.index'))
+      return redirect(url_for('problem.index'))
 
    return render_template('problem/edit_tag.html', tag=tag)
 
 # ----------------------------------------------------------------------------
 
-@problem_page.route('/problem_tag_list')
+@problem.route('/problem_tag_list')
+@auth.role_required('teacher')
 def problem_tag_list():
    entries = ProblemTag.select()
    return render_template('/problem/problem_tag_list.html', entries=entries)

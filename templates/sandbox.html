@@ -16,23 +16,34 @@
 </head>
 <body>
 <div class="navbar navbar-fixed-top">
-   <div class="navbar-inner">
-      <div class="container">
-         <span class="brand" href="#">SANDBOXES</span>
-          <div id="logout-btn">
-           <a class="" href="{{url_for('user_page.logout')}}" title="Log out" id="logout"><i class="icon-off"></i></a>
-         </div>
-          <div id="show-my-board">
-            {% if user_record.open_board: %}
-              <a href="#" class="badge badge-success board-status">OPEN</a>
-            {% else: %}
-              <a href="#" class="badge badge-inverse board-status">CLOSED</a>
-            {% endif %}
-          </div>
-         <span id="alert"></span>
-     </div>
-   </div>
- </div>
+  <div class="navbar-inner">
+    <div class="container">
+      <div id="show-my-board">
+        {% if user_record.open_board: %}
+          <a href="#" class="board-status"><i class="icon-flag"></i></a>
+        {% else: %}
+          <a href="#" class="board-status"><i class="icon-asterisk"></i></a>
+        {% endif %}
+      </div>
+
+      <span class="brand" href="#">my sandbox</span>
+
+      <span id="setting">
+        {% if user_record.is_teacher: %}
+          <a href="{{url_for('admin')}}" target="_blank" class="pull-right"><i class="icon-wrench"></i></a>
+        {% else: %}
+          <a href="{{url_for('user.edit')}}" target="_blank" class="pull-right"><i class="icon-wrench"></i></a>
+        {% endif %}
+      </span>
+
+      <div id="logout-btn">
+        <a class="" href="{{url_for('user.logout')}}" title="Log out" id="logout"><i class="icon-off"></i></a>
+      </div>
+
+      <span id="alert"></span>
+    </div>
+  </div>
+</div>
 
 <div class="container">
 
@@ -75,24 +86,30 @@
         </div>
 
         <div class="grade-space">
-          {% if (user_record.is_teacher or u.id==user_record.id) and (not (user_record.is_teacher and u.id==user_record.id)) and (u.id in all_records): %}
-            <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem_page.grade_history', uid=u.id)}}" class="label">H</a>
+          {% if (user_record.is_teacher or u.id==user_record.id) and (not (user_record.is_teacher and u.id==user_record.id)): %}
+            <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem.grade_history', uid=u.id)}}" class="label">H</a>
             &nbsp; &nbsp;
 
-            <i class="icon-thumbs-up"></i>
-            <span id="brownie-{{u.id}}" class="brownies label label-success">
-              {{all_records[u.id].brownies}} brownies
-            </span>
-            &nbsp; &nbsp;
-
-            <span id="score-{{u.id}}">
-              {% for idx, p in enumerate(problem_ids): %}
-                <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem_page.view', pid=p, uid=u.id)}}">{{p}}</a> {{all_records[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
-              {% endfor %}
-            </span>
-
+            {% if u.id in all_records: %}
+              <i class="icon-thumbs-up"></i>
+              <span id="brownie-{{u.id}}" class="brownies label label-success">
+                {{all_records[u.id].brownies}} brownies
+              </span>
+              &nbsp; &nbsp;
+              <span id="score-{{u.id}}">
+                {% for idx, p in enumerate(problem_ids): %}
+                  <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem.view', pid=p, uid=u.id)}}">{{p}}</a> {{all_records[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
+                {% endfor %}
+              </span>
+            {% else: %}
+              <i class="icon-thumbs-up"></i>
+              <span id="brownie-{{u.id}}" class="brownies label label-success"></span>
+              &nbsp; &nbsp;
+              <span id="score-{{u.id}}"></span>
+            {% endif %}
           {% endif %}
         </div>
+
       </div>
     {% endfor %}
   </div>
@@ -149,10 +166,10 @@
   }
   function format_board(stat){
     if (stat == 'open') {
-      return '<a href="#" id="show-my-board" class="badge badge-success board-status">OPEN</a>';
+      return '<a href="#" class="board-status"><i class="icon-flag"></i></a>';
     }
     else if (stat == 'closed') {
-      return '<a href="#" id="show-my-board" class="badge badge-inverse board-status">CLOSED</a>';
+      return '<a href="#" class="board-status"><i class="icon-asterisk"></i></a>';
     }
     else { return ''; }
   }

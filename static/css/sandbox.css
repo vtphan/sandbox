@@ -1,17 +1,20 @@
 body {
   padding-top: 50px; /* 60px to make the container go all the way to the bottom of the topbar */
 }
+.grade-space {
+  padding: 0em 1em 1em 0.3em;
+}
 .board-status {
-  float: right;
-  margin-top: 7px;
-  font-size: 120%;
-  padding: 7px 10px 7px 10px;
+  float: left;
+  margin: 4px 5px 0 0px;
+  font-size: 80%;
+  padding: 7px 7px 7px 7px;
   font-family: Monospace, Georgia, Courier;
 }
-#logout-btn{
+#logout-btn, #setting{
   float: right;
-  padding: 10px 15px 0px;
-  margin: 0 0 0 15px;
+  padding: 10px 0px 0px 0px;
+  margin: 2px 0px 0px 20px;
 }
 .codespace{
    height:400px !important; overflow:scroll;
@@ -74,7 +77,4 @@ body {
 }
 .brownies {
   padding: 2px 5px 2px 5px;
-}
-.grade-space {
-  padding: 0em 1em 1em 1em;
 }
