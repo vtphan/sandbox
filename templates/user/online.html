@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+
+<ul class="breadcrumb">
+  <li><a href="{{url_for('admin')}}">Admin</a> <span class="divider">/</span></li>
+  <li class="active">Online</li>
+</ul>
+
+<h3> Who is online</h3>
+
+<table class="table">
+{% for sid, student in students.items(): %}
+   <tr>
+      <td>
+         {% if student.is_teacher: %}<strong>{% endif %}
+         <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem.grade_history', uid=sid)}}">
+            {{ student.username }}
+         </a>
+         {% if student.is_teacher: %}</strong>{% endif %}
+      </td>
+
+      <td>
+         {% if student.open_board: %}open{% endif %}
+      </td>
+
+      <td>
+        <a href="{{ url_for('user.logout_user', uid=sid) }}"><i class="icon-off"></i><a>
+      </td>
+   </tr>
+{% endfor %}
+</table>
+
+<div id="myModal" class="modal hide" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-header"></div>
+  <div class="modal-body"></div>
+</div>
+<script type="text/javascript">
+  $(document).ready(function(){
+    $('body').on('hidden', '.modal', function () {
+      $(this).removeData('modal');
+    });
+  });
+</script>
+
+{% endblock %}

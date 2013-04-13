@@ -109,7 +109,7 @@ class Redcord (object):
       return cls.conn.execute_command('del', cls.__key_prefix__ + str(key))
 
    @classmethod
-   def get_all(cls):
+   def all(cls):
       keys = cls.keys()
       items = {}
       for k in keys:
@@ -121,7 +121,7 @@ class Redcord (object):
    def keys(cls):
       L = len(cls.__key_prefix__)
       res = cls.conn.execute_command('keys', cls.__key_prefix__ + '*')
-      return ( cls.id_type(k[L:]) for k in res )
+      return [ cls.id_type(k[L:]) for k in res ]
 
    @classmethod
    def raw_keys(cls):

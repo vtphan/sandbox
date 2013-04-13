@@ -10,10 +10,11 @@ from student_record import StudentRecord
 @app.route('/admin')
 @auth.role_required('teacher')
 def admin():
-	user = auth.get_logged_in_user()
-	if not user:
-		return redirect(url_for('auth.login'))
-	return render_template('admin.html', user=user)
+   user = auth.get_logged_in_user()
+   num_online = len(StudentRecord.online_students())
+   if not user:
+      return redirect(url_for('auth.login'))
+   return render_template('admin.html', user=user, num_online=num_online)
 
 # ----------------------------------------------------------------------------
 @app.route('/')

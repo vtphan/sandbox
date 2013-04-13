@@ -65,7 +65,7 @@ class Collection (object):
       return set(self.type_of_sid(i) for i in res)
 
    # ------------------------------------------------------------------------
-   def get_all(self):
+   def all(self):
       keys = self.keys()
       pipe = self.r.pipeline()
       for k in keys:
@@ -82,4 +82,4 @@ if __name__ == '__main__':
    # c.insert(6, 1,2,3,4,5)
    # c.insert(5, 5,9,10,11,12)
    # c.insert(5, 6)
-   print c.get_all()
+   print c.all()

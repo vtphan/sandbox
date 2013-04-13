@@ -18,16 +18,21 @@ def init_user_table():
       admin.save()
 
 # ----------------------------------------------------------------------------
-@user.route('/logout')
-@auth.login_required
-def logout():
-   user = auth.get_logged_in_user()
-   auth.logout_user(user)
+def logout_and_cleanup(uid=None, next_url=None):
+   all_records = StudentRecord.online_students()
+
+   if uid is None:
+      user = auth.get_logged_in_user()
+      auth.logout_user(user)
+   else:
+      user = auth.User.get(auth.User.id == uid)
+      auth.logout_user(user, self_logout=False)
+
    user_record = StudentRecord(user.id)
    user_record.open_board = False
    user_record.online = False
    user_record.save()
-   all_records = StudentRecord.all_online()
+
    listening_clients = sse.listening_clients(user.id)
 
    # Turn off menu/tabs of all listeners and tell them to go home
@@ -40,7 +45,31 @@ def logout():
    sse.notify(mesg, event="log-out")
    sse.close(user_record.id)
 
-   return redirect(url_for('index'))
+   return redirect( next_url or url_for('index') )
+
+# ----------------------------------------------------------------------------
+
+@user.route('/logout')
+@auth.login_required
+def logout():
+   return logout_and_cleanup()
+
+# ----------------------------------------------------------------------------
+@user.route('/logout_user/<int:uid>')
+@auth.role_required('teacher')
+def logout_user(uid):
+   user = auth.get_logged_in_user()
+   if user.id == uid:
+      return logout_and_cleanup()
+   else:
+      return logout_and_cleanup(uid, url_for('user.online'))
+
+# ----------------------------------------------------------------------------
+@user.route('/online')
+@auth.role_required('teacher')
+def online():
+   students = StudentRecord.online_students()
+   return render_template('user/online.html', students=students)
 
 # ----------------------------------------------------------------------------
 @user.route('/list', methods=['GET','POST'])

@@ -13,18 +13,21 @@ class StudentRecord ( Redcord ):
       super(StudentRecord, self).__init__(uid)
 
    @classmethod
-   def get_all(cls, f = lambda x: True):
-      things = super(StudentRecord, cls).get_all()
+   def all_students(cls, f = lambda x: True):
+      things = super(StudentRecord, cls).all()
       return { int(k) : v for k,v in things.items() if f(v)}
 
    @classmethod
-   def all_online(cls):
-      return cls.get_all( lambda v: v.online==True )
+   def online_students(cls):
+      return cls.all_students( lambda v: v.online==True )
 
+   @classmethod
+   def count(cls):
+      return len( cls.keys() )
 
 StudentRecord.id_type = int
 
 if __name__ == '__main__':
-   for k,v in StudentRecord.get_all().items():
-      print k, v, type(k)
-   pass
+   for k,v in StudentRecord.all_students().items():
+      print k, v
+   print StudentRecord.count()

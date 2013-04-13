@@ -30,7 +30,7 @@ def event_toggle_board(message, cid):
       record.open_board = not record.open_board
       record.save()
 
-      all_records = StudentRecord.all_online()
+      all_records = StudentRecord.online_students()
 
       message_to_all = {}
       listening_clients = sse.listening_clients(cid)
@@ -63,7 +63,7 @@ def event_send_code(message, cid):
 def event_chat(message, cid):
    chatter = StudentRecord(cid)
    channel = sse.current_channel(cid)
-   teachers = StudentRecord.get_all( lambda v: v.is_teacher == True)
+   teachers = StudentRecord.all_students( lambda v: v.is_teacher == True)
    m = dict(cid=channel, chat=message, chat_id=chat_id(), uid=chatter.id, username=chatter.username)
    sse.broadcast(channel, m, m, additional_channels=teachers.keys(), event='chat')
 
@@ -73,7 +73,7 @@ def event_chat(message, cid):
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
 def event_join(host, guest):
-   records = StudentRecord.all_online()
+   records = StudentRecord.online_students()
    guest_record = records[int(guest)]
    host_record = records[int(host)]
    host_channel = sse.current_channel(host)
@@ -120,7 +120,7 @@ def index():
    user_record.online = True
    user_record.save()
    all_users = auth.User.select()
-   all_records = StudentRecord.all_online()
+   all_records = StudentRecord.online_students()
 
    # notify those who can view boards that the client is online
    messages = {}

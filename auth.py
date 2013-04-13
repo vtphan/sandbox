@@ -157,13 +157,16 @@ class Auth(object):
         for f in self.exec_after_login:
             f()
 
-    def logout_user(self, user):
-        if self.clear_session:
-            session.clear()
+    def logout_user(self, user, self_logout=True):
+        if self_logout:
+            if self.clear_session:
+                session.clear()
+            else:
+                session.pop('logged_in', None)
+            flash('You are now logged out', 'success')
         else:
-            session.pop('logged_in', None)
+            flash('User %s is logged out.' % user.id)
         g.user = None
-        flash('You are now logged out', 'success')
 
     def get_logged_in_user(self):
         if session.get('logged_in'):

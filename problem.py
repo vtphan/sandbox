@@ -166,7 +166,7 @@ def publish_toggle(pid):
    else:
       red.srem('published-problems', pid)
 
-   all_records = StudentRecord.all_online()
+   all_records = StudentRecord.online_students()
    pids = sorted(int(p) for p in red.smembers('published-problems'))
    messages = {}
    for k, v in all_records.items():
