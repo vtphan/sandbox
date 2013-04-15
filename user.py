@@ -19,7 +19,7 @@ def init_user_table():
 
 # ----------------------------------------------------------------------------
 def logout_and_cleanup(uid=None, next_url=None):
-   all_records = StudentRecord.online_students()
+   online_students = StudentRecord.online_students()
 
    if uid is None:
       user = auth.get_logged_in_user()
@@ -37,7 +37,7 @@ def logout_and_cleanup(uid=None, next_url=None):
 
    # Turn off menu/tabs of all listeners and tell them to go home
    mesg = {}
-   for cid in all_records:
+   for cid in online_students:
       mesg[cid] = dict(cid=user.id)
       if cid in listening_clients or cid==user.id:
          mesg[cid].update(home_cid = cid)

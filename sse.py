@@ -118,7 +118,8 @@ def sse_receive(cid):
    def event_stream(cid):
       pubsub = red.pubsub()
       pubsub.subscribe('sse-%s' % cid)
-      listen_to(cid, cid)
+      if current_channel(cid) is None:
+         listen_to(cid, cid)
       print 'Channel %s is open.' % cid
       for message in pubsub.listen():
          if isinstance(message['data'], basestring):

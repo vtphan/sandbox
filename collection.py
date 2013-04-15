@@ -76,10 +76,11 @@ class Collection (object):
    # ------------------------------------------------------------------------
 
 if __name__ == '__main__':
-   c = Collection('test')
+   c = Collection('current_channel')
    # print c.members(1), c.members(10)
    # c.insert(3, 7, 6, 30, 15)
    # c.insert(6, 1,2,3,4,5)
    # c.insert(5, 5,9,10,11,12)
    # c.insert(5, 6)
    print c.all()
+   print c.set_of(5)

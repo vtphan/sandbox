@@ -69,15 +69,13 @@ def event_chat(message, cid):
 
 # ----------------------------------------------------------------------------
 # client "guest" joins channel "host"
-# TODO: pass along all users joining the channel
 # ----------------------------------------------------------------------------
 @sse.on_event('join')
 def event_join(host, guest):
-   records = StudentRecord.online_students()
-   guest_record = records[int(guest)]
-   host_record = records[int(host)]
+   online_students = StudentRecord.online_students()
+   guest_record = online_students[int(guest)]
+   host_record = online_students[int(host)]
    host_channel = sse.current_channel(host)
-
    guest_channel = sse.current_channel(guest)
    sse.listen_to(host, guest)
 
@@ -85,7 +83,7 @@ def event_join(host, guest):
 
    if host!=guest and int(host)!=int(host_channel):
       # host is elsewhere
-      host_of_host = records[int(host_channel)]
+      host_of_host = online_students[int(host_channel)]
       m.update(notice = "%s is visiting %s's sandbox" % (host_record.username, host_of_host.username))
 
    if guest_record.is_teacher:
@@ -96,17 +94,13 @@ def event_join(host, guest):
    sse.notify( { guest : m } , event='join')
 
    ## Inform old channel and new channel of updated listeners list
-   guest_listeners = [ records[int(i)].username for i in sse.listening_clients(guest_channel) ]
+   guest_listeners = [ online_students[int(i)].username for i in sse.listening_clients(guest_channel) ]
    m = dict(host_cid=guest_channel, listeners=guest_listeners)
    sse.broadcast(guest_channel, m, m, event='listeners-update')
 
-   host_listeners = [ records[int(i)].username for i in sse.listening_clients(host) ]
+   host_listeners = [ online_students[int(i)].username for i in sse.listening_clients(host) ]
    m = dict(host_cid=host, listeners=host_listeners)
    sse.broadcast(host, m, m, event='listeners-update')
-
-   # print '%s leaves; inform %s with %s' % (guest, guest_channel, guest_listeners)
-   # print '%s joins; inform %s with %s' % (guest, host, host_listeners)
-
 
 # ----------------------------------------------------------------------------
 # sandbox view
@@ -119,24 +113,29 @@ def index():
    user_record = StudentRecord(logged_in_user.id)
    user_record.online = True
    user_record.save()
+
+   current_channel = sse.current_channel(user_record.id)
+
    all_users = auth.User.select()
-   all_records = StudentRecord.online_students()
+   online_students = StudentRecord.online_students()
+   listeners=[ online_students[int(i)].username \
+      for i in sse.listening_clients(current_channel) if int(i) in online_students ]
 
    # notify those who can view boards that the client is online
    messages = {}
-   for c, r in all_records.items():
+   for c, r in online_students.items():
       if user_record.id != c and (r.is_teacher or user_record.open_board):
          messages[c] = dict(cid=user_record.id, board_status=user_record.open_board)
    sse.notify(messages, event='online')
 
    problem_ids = sorted(int(i) for i in red.smembers('published-problems'))
-   listeners=[all_records[int(i)].username for i in sse.listening_clients(user_record.id) if int(i) in all_records]
 
    return render_template('sandbox.html',
       sum=sum, enumerate=enumerate,
+      current_channel = current_channel,
       problem_ids=problem_ids,
       user_record = user_record,
-      all_records = all_records,
+      online_students = online_students,
       all_users = all_users,
       listeners = listeners)
 

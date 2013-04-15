@@ -26,7 +26,7 @@
         {% endif %}
       </div>
 
-      <span class="brand" href="#">my sandbox</span>
+      <span class="brand" href="#">{{ user_record.username }}'s sandbox</span>
 
       <span id="setting">
         {% if user_record.is_teacher: %}
@@ -54,14 +54,14 @@
 <div class="tabbable tabs-right">
   <ul class="nav nav-tabs">
     {% for u in all_users: %}
-    <li class="menu{{u.id}} {% if u.id==user_record.id: %}active{% endif %}">
+    <li class="menu{{u.id}} {% if u.id==current_channel: %}active{% endif %}">
       <a href="#tab{{u.id}}" data-toggle="tab">{{u.username}}</a>
     </li>
     {% endfor %}
   </ul>
   <div class="tab-content">
     {% for u in all_users: %}
-      <div class="tab-pane {% if u.id==user_record.id: %}active{% endif %}" id="tab{{u.id}}">
+      <div class="tab-pane {% if u.id==current_channel: %}active{% endif %}" id="tab{{u.id}}">
         <div class="row-fluid">
           <!-- CODE  -->
           <div class="span8">
@@ -90,15 +90,15 @@
             <a data-target="#myModal" data-toggle="modal" href="{{url_for('problem.grade_history', uid=u.id)}}" class="label">H</a>
             &nbsp; &nbsp;
 
-            {% if u.id in all_records: %}
+            {% if u.id in online_students: %}
               <i class="icon-thumbs-up"></i>
               <span id="brownie-{{u.id}}" class="brownies label label-success">
-                {{all_records[u.id].brownies}} brownies
+                {{online_students[u.id].brownies}} brownies
               </span>
               &nbsp; &nbsp;
               <span id="score-{{u.id}}">
                 {% for idx, p in enumerate(problem_ids): %}
-                  <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem.view', pid=p, uid=u.id)}}">{{p}}</a> {{all_records[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
+                  <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem.view', pid=p, uid=u.id)}}">{{p}}</a> {{online_students[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
                 {% endfor %}
               </span>
             {% else: %}
@@ -235,8 +235,8 @@
     {% endfor %}
 
     // turning on active users
-    {% for uid, user in all_records.items(): %}
-      {% if uid==user_record.id or user.open_board or all_records[user_record.id].is_teacher: %}
+    {% for uid, user in online_students.items(): %}
+      {% if uid==user_record.id or user.open_board or online_students[user_record.id].is_teacher: %}
         $('.menu{{uid}}').show();
       {% endif %}
       {% if user.open_board: %}
@@ -257,6 +257,7 @@
 
     es.addEventListener("listeners-update", function(event) {
       var data = $.parseJSON(event.data);
+      console.log('listeners-update ' + data.host_cid + ' ' + data.listeners)
       $('#listeners' + data.host_cid).html(format_listener_list(data.listeners));
     }, false);
 
