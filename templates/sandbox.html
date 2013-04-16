@@ -129,7 +129,7 @@
 <script src="{{ url_for('static', filename='codemirror/python.js') }}"></script>
 
 <script type="text/javascript">
-  // $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   var cid = $('#cid').val();
   var code_cid = "code" + cid;
   var editor = CodeMirror.fromTextArea(document.getElementById("code" + cid), {
@@ -142,7 +142,9 @@
       if (ev.keyCode == 13){
         if ( ev.shiftKey && ev.type == 'keyup' ) {
           $.post('/sse_send', { message: editor.getValue(), event:'run-code', cid: cid });
-          $('#result').html('running...');
+          // $('#result' + cid).html('running...');
+          loading_img = $SCRIPT_ROOT + '/static/img/loading.gif'
+          $('#result' + cid).html('<img src="' + loading_img + '" alt="running..."/>');
         }
         else if (ev.type == 'keyup') {
           $.post('/sse_send', { message: editor.getValue(), event:'send-code', cid: cid });

@@ -3,7 +3,7 @@ import tempfile
 import random
 import string
 import subprocess
-from subprocess import check_output, CalledProcessError
+from subprocess32 import check_output, CalledProcessError, TimeoutExpired
 import time
 import datetime
 
@@ -13,6 +13,8 @@ from config import app, auth, red
 from student_record import StudentRecord
 
 sandbox = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
+
+TIMEOUT = 7
 
 # ----------------------------------------------------------------------------
 
@@ -73,6 +75,7 @@ def event_chat(message, cid):
 @sse.on_event('join')
 def event_join(host, guest):
    online_students = StudentRecord.online_students()
+   ## Key error is possible
    guest_record = online_students[int(guest)]
    host_record = online_students[int(host)]
    host_channel = sse.current_channel(host)
@@ -114,7 +117,7 @@ def index():
    user_record.online = True
    user_record.save()
 
-   current_channel = sse.current_channel(user_record.id)
+   current_channel = sse.current_channel(user_record.id) or user_record.id
 
    all_users = auth.User.select()
    online_students = StudentRecord.online_students()
@@ -143,9 +146,11 @@ def index():
 def execute_python_code(code):
    def run_code_now(code_file):
       try:
-         output = check_output(['/usr/local/bin/python', code_file], stderr=subprocess.STDOUT)
+         output = check_output(['/usr/local/bin/python', code_file], stderr=subprocess.STDOUT, timeout=TIMEOUT)
       except CalledProcessError as err:
          output = err.output
+      except TimeoutExpired:
+         return 'Timeout!!   You program took longer than %s seconds.' % TIMEOUT
       return output.replace('\n', '<br>')
 
    fn = 'sb_' + ''.join(random.choice(string.letters) for i in xrange(20)) + '.py'

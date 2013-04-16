@@ -17,14 +17,14 @@ body {
   margin: 2px 0px 0px 20px;
 }
 .codespace{
-   height:400px !important; overflow:scroll;
+   height:350px !important; overflow:scroll;
    margin-bottom: 0px;
 }
 .chatspace{
-   height:360px !important; overflow:scroll;
+   height:310px !important; overflow:scroll;
 }
 .resultspace{
-   height:200px !important; overflow:scroll;
+   height:150px !important; overflow:scroll;
    margin-top:5px;
    font-size: 87%;
    width:100%;
