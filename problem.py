@@ -18,8 +18,8 @@ class Tag (db.Model):
    name = CharField()
 
 class ProblemTag (db.Model):
-   problem = ForeignKeyField(Problem)
-   tag = ForeignKeyField(Tag)
+   problem = ForeignKeyField(Problem, related_name='problemtags')
+   tag = ForeignKeyField(Tag, related_name='problemtags')
 
 class Score (db.Model):
    problem = ForeignKeyField(Problem)
@@ -53,25 +53,15 @@ def init():
 @problem.route('/')
 @auth.role_required('teacher')
 def index():
-   query = ProblemTag.select(ProblemTag, Problem, Tag).join(Problem).switch(ProblemTag).join(Tag)
+   query = Problem.select(Problem).join(ProblemTag,JOIN_LEFT_OUTER) \
+      .join(Tag,JOIN_LEFT_OUTER).distinct().order_by(Problem.id.desc())
+   probs = query.execute()
 
-   items = {}
-   for i in query:
-      if i.problem.id not in items:
-         items[i.problem.id] = []
-      items[i.problem.id].append(i)
-
-   published_probs = red.smembers('published-problems')
-   published_probs = [int(p) for p in published_probs]
-   stats = { pid : (pid in published_probs) for pid in items }
-
+   published_probs = [ int(p) for p in red.smembers('published-problems') ]
+   stats = { p.id : (p.id in published_probs) for p in probs }
    tags = Tag.select()
 
-   # entries=Score.select()
-   # for e in entries:
-   #    print e.id, e.problem.id, e.user.username, e.points
-
-   return render_template('problem/index.html', stats = stats, items=items, tags=tags, sorted=sorted)
+   return render_template('problem/index.html', stats=stats, probs=probs, tags=tags)
 
 # ----------------------------------------------------------------------------
 

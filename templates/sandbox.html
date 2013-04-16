@@ -98,7 +98,7 @@
               &nbsp; &nbsp;
               <span id="score-{{u.id}}">
                 {% for idx, p in enumerate(problem_ids): %}
-                  <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem.view', pid=p, uid=u.id)}}">{{p}}</a> {{online_students[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
+                  <a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="{{url_for('problem.view', pid=p, uid=u.id)}}">prob {{idx+1}}</a> {{online_students[u.id].scores[p] or 0}}pt&nbsp; &nbsp;
                 {% endfor %}
               </span>
             {% else: %}
@@ -154,18 +154,6 @@
     }
   });
 
-  function format_problems(pids, target_cid){
-    var output = '';
-    var url;
-    for (var i = 0; i < pids.length; i++) {
-      url = '/problem/view/' + pids[i];
-      if ( ($('#is_teacher').val() == 'True') && (cid != target_cid) ) {
-        url += '/' + target_cid
-      }
-      output += '<a data-target="#myModal" data-toggle="modal" class="btn btn-mini" href="' + url + '">p' + pids[i] + '</a> ';
-    }
-    return output;
-  }
   function format_board(stat){
     if (stat == 'open') {
       return '<a href="#" class="board-status"><i class="icon-flag"></i></a>';
@@ -205,8 +193,8 @@
       var pid = scores[i][0];
       var score = scores[i][1];
       var url = '/problem/view/' + pid + '/' + uid;
-      var d = '<a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="' + url + '">';
-      d += pid + '</a> ' + score + 'pt&nbsp; &nbsp' ;
+      var d = '<a data-target="#myModal" data-toggle="modal" class="badge badge-info" href="' + url + '">prob ';
+      d += (i+1) + '</a> ' + score + 'pt&nbsp; &nbsp ' ;
       output += d;
     }
     return output;
