@@ -1,7 +1,9 @@
-Real-time teaching Python programming environment.
+Real-time teaching Python/programming environment.
 
+==================================================================
 Dependencies:
 
+- Redis: http://redis.io/download
 - Python packages:
    - Pip (http://www.pip-installer.org/en/latest/installing.html)
    - Flask (pip install Flask)
@@ -11,12 +13,10 @@ Dependencies:
          Libevent 1.4.x-stable (non-pip installation: http://libevent.org)
          Gevent (non-pip installation: https://pypi.python.org/pypi/gevent)
    - Gunicorn (pip install gunicorn)
-   - Redis (pip install redis)
+   - Redis-py (pip install redis)
    - Subprocess32 (pip install subprocess32)
 
-- Redis: http://redis.io/download
-
-
+==================================================================
 Running the application:
 
 (1) run redis server:
