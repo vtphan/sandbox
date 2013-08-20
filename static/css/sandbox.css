@@ -6,10 +6,7 @@ body {
 }
 .board-status {
   float: left;
-  margin: 4px 5px 0 0px;
-  font-size: 80%;
-  padding: 7px 7px 7px 7px;
-  font-family: Monospace, Georgia, Courier;
+  padding: 10px;
 }
 #logout-btn, #setting{
   float: right;

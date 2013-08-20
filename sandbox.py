@@ -117,6 +117,9 @@ def index():
    user_record.online = True
    user_record.save()
 
+   # if user is running on another client, close the other.
+   sse.close(user_record.id)
+
    current_channel = sse.current_channel(user_record.id) or user_record.id
 
    all_users = auth.User.select()

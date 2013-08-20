@@ -1,0 +1,27 @@
+Real-time teaching Python programming environment.
+
+Dependencies:
+
+- Python packages:
+   - Pip (http://www.pip-installer.org/en/latest/installing.html)
+   - Flask (pip install Flask)
+   - Peewee (pip install flask-peewee)
+   - Gevent
+         Greenlet (pip install greenlet)
+         Libevent 1.4.x-stable (non-pip installation: http://libevent.org)
+         Gevent (non-pip installatioan: https://pypi.python.org/pypi/gevent)
+   - Gunicorn (pip install gunicorn)
+   - Redis (pip install redis)
+   - Subprocess32 (pip install subprocess32)
+
+- Redis: http://redis.io/download
+
+
+Running the application:
+
+(1) run redis server:
+         redis-server
+
+(2) run gunicorn in the application directory:
+         gunicorn -c gunicorn_conf.py app:app
+

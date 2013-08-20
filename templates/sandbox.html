@@ -18,15 +18,14 @@
 <div class="navbar navbar-fixed-top">
   <div class="navbar-inner">
     <div class="container">
+      <span class="brand" href="#">{{ user_record.username }}'s sandbox</span>
       <div id="show-my-board">
         {% if user_record.open_board: %}
-          <a href="#" class="board-status"><i class="icon-flag"></i></a>
+          <a href="#" class="board-status"><i class="icon-share"></i></a>
         {% else: %}
-          <a href="#" class="board-status"><i class="icon-asterisk"></i></a>
+          <a href="#" class="board-status"><i class="icon-lock"></i></a>
         {% endif %}
       </div>
-
-      <span class="brand" href="#">{{ user_record.username }}'s sandbox</span>
 
       <span id="setting">
         {% if user_record.is_teacher: %}
@@ -156,10 +155,10 @@
 
   function format_board(stat){
     if (stat == 'open') {
-      return '<a href="#" class="board-status"><i class="icon-flag"></i></a>';
+      return '<a href="#" class="board-status"><i class="icon-share"></i></a>';
     }
     else if (stat == 'closed') {
-      return '<a href="#" class="board-status"><i class="icon-asterisk"></i></a>';
+      return '<a href="#" class="board-status"><i class="icon-lock"></i></a>';
     }
     else { return ''; }
   }
@@ -247,7 +246,7 @@
 
     es.addEventListener("listeners-update", function(event) {
       var data = $.parseJSON(event.data);
-      console.log('listeners-update ' + data.host_cid + ' ' + data.listeners)
+      // console.log('listeners-update ' + data.host_cid + ' ' + data.listeners)
       $('#listeners' + data.host_cid).html(format_listener_list(data.listeners));
     }, false);
 
@@ -371,7 +370,7 @@
 
     es.addEventListener("close-client-channel", function(event) {
       es.close();
-      window.location = "/user/logout";
+      $('body').html('<h3>This window is deactivated because another client is assessing your sandbox.</h3>')
     }, false);
 
 
