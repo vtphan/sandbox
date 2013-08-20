@@ -18,7 +18,7 @@ def init_user_table():
       admin.save()
 
 # ----------------------------------------------------------------------------
-def logout_and_cleanup(uid=None, next_url=None):
+def logout_and_cleanup(uid=None, next_url=None, logout=False):
    online_students = StudentRecord.online_students()
 
    if uid is None:
@@ -43,7 +43,8 @@ def logout_and_cleanup(uid=None, next_url=None):
          mesg[cid].update(home_cid = cid)
          sse.listen_to(cid, cid)
    sse.notify(mesg, event="log-out")
-   sse.close(user_record.id)
+
+   sse.close(user_record.id, logout)
 
    return redirect( next_url or url_for('index') )
 
@@ -52,7 +53,7 @@ def logout_and_cleanup(uid=None, next_url=None):
 @user.route('/logout')
 @auth.login_required
 def logout():
-   return logout_and_cleanup()
+   return logout_and_cleanup(logout=True)
 
 # ----------------------------------------------------------------------------
 @user.route('/logout_user/<int:uid>')

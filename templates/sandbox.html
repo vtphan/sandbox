@@ -318,6 +318,7 @@
     }, false);
 
     es.addEventListener("run-code", function(event) {
+      console.log('>', event.data);
       var data = $.parseJSON(event.data);
       if (data.code != undefined) {
         $('#code' + data.cid).html(data.code);
@@ -371,6 +372,11 @@
     es.addEventListener("close-client-channel", function(event) {
       es.close();
       $('body').html('<h3>This window is deactivated because another client is assessing your sandbox.</h3>')
+    }, false);
+
+    es.addEventListener("close-and-logout", function(event) {
+      es.close();
+      window.location = "{{url_for('user.logout')}}";
     }, false);
 
 

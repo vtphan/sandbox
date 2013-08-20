@@ -81,10 +81,12 @@ def current_channel(client):
 
 
 # ----------------------------------------------------------------------------
-def close(cid):
-   red.publish('sse-%s' % cid, u'close-client-channel;close-client-channel')
-   time.sleep(0.5)
-   red.publish('sse-%s' % cid, u'close-channel;')
+def close(cid, logout=False):
+   if logout:
+      red.publish('sse-%s' % cid, u'close-and-logout;close-and-logout')
+   else:
+      red.publish('sse-%s' % cid, u'close-client-channel;close-client-channel')
+      red.publish('sse-%s' % cid, u'close-channel;')
 
 # ----------------------------------------------------------------------------
 # CLIENT SIDE
