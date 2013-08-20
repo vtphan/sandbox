@@ -9,7 +9,7 @@ Dependencies:
    - Gevent
          Greenlet (pip install greenlet)
          Libevent 1.4.x-stable (non-pip installation: http://libevent.org)
-         Gevent (non-pip installatioan: https://pypi.python.org/pypi/gevent)
+         Gevent (non-pip installation: https://pypi.python.org/pypi/gevent)
    - Gunicorn (pip install gunicorn)
    - Redis (pip install redis)
    - Subprocess32 (pip install subprocess32)
