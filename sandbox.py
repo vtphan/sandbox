@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 import random
 import string
@@ -15,6 +16,7 @@ from student_record import StudentRecord
 sandbox = Blueprint('sandbox', __name__, url_prefix='/sandbox', template_folder='templates')
 
 TIMEOUT = 7
+PYTHONPATH = sys.executable #os.environ['PYTHONPATH'].split(os.pathsep)[0]
 
 # ----------------------------------------------------------------------------
 
@@ -149,7 +151,7 @@ def index():
 def execute_python_code(code):
    def run_code_now(code_file):
       try:
-         output = check_output(['/usr/local/bin/python', code_file], stderr=subprocess.STDOUT, timeout=TIMEOUT)
+         output = check_output([PYTHONPATH, code_file], stderr=subprocess.STDOUT, timeout=TIMEOUT)
       except CalledProcessError as err:
          output = err.output
       except TimeoutExpired:
