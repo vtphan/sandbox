@@ -19,6 +19,8 @@ Dependencies:
 ==================================================================
 Running the application:
 
+Make sure you set PYTHONPATH environment variable to the location of the python binary.
+
 (1) run redis server:
          redis-server
 
